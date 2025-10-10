@@ -1,0 +1,37 @@
+stages:
+  - cherry-pick
+  - merge
+
+cherry_pick_commit:
+  stage: cherry-pick
+  image: alpine/git
+  script:
+    - git config --global user.email "ci@example.com"
+    - git config --global user.name "CI Bot"
+    - git fetch origin
+    - git checkout $TARGET_BRANCH
+    - git cherry-pick $COMMIT_SHA
+    - git push origin HEAD:$TARGET_BRANCH
+  only:
+    - merge_requests
+
+create_merge_commit:
+  stage: merge
+  image: alpine/git
+  script:
+    - git config --global user.email "ci@example.com"
+    - git config --global user.name "CI Bot"
+    - git fetch origin
+    - git checkout $TARGET_BRANCH
+    - git merge $SOURCE_BRANCH --no-ff -m "Merge $SOURCE_BRANCH into $TARGET_BRANCH"
+    - git push origin HEAD:$TARGET_BRANCH
+  only:
+    - merge_requests
+# api call for git commits on ticket
+# curl --fail --show-error --insecure -X GET   'https://jira.c2sf.mil/rest/gitplugin/1.0/issues/CMIS-5/commits'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json'
+
+# Get all tickets with fix version
+#curl --fail --show-error --insecure -X GET   'https://jira.c2sf.mil/rest/api/2/search?jql=fixVersion="release_test1"'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json'
+
+# Sample for getting Issue info
+# curl --fail --show-error --insecure -X GET   'https://jira.c2sf.mil/rest/api/2/issue/CMIS-5'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json'
