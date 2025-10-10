@@ -1,0 +1,214 @@
+# This file is a template, and might need editing before it works on your project.
+# This is a sample GitLab CI/CD configuration file that should run without any modifications.
+# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
+# it uses echo commands to simulate the pipeline execution.
+#
+# A pipeline is composed of independent jobs that run scripts, grouped into stages.
+# Stages run in sequential order, but jobs within stages run in parallel.
+#
+# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
+#
+# You can copy and paste this template into a new `.gitlab-ci.yml` file.
+# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
+#
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
+
+stages: # List of stages for jobs, and their order of execution
+  - fortify_version_create
+  - scan
+  - jira_ticket_link_apply
+
+variables:
+  FORTIFY_BUILD_ID: "sandbox_1"
+  GITLAB_API_TOKEN: "<your-gitlab-api-token>" # Store securely as CI/CD secret
+  FORTIFY_RESULT_FILE: fpr_report.fpr
+  FPRNAME: fpr_report.fpr
+  GITLAB_URL: "https://gitlab.c2sf.mil"
+  PROJECT_ID: "CMIS"
+  MR_IID: $CI_MERGE_REQUEST_IID
+  PRIVATE_TOKEN: "$GITLAB_API_TOKEN"
+  VERSION: $CI_COMMIT_REF_NAME
+  FF_SCRIPT_SECTIONS: "true"
+
+fortify_version_create:
+  #image: docker-registry.c2sf.mil/ironbank/opensource/debian/debian:latest
+  image: docker-registry.c2sf.mil/cmis/rockylinux:latest
+  stage: fortify_version_create
+  before_script:
+    - mkdir -p $HOME/.docker
+    - echo $DOCKER_AUTH_CONFIG > $HOME/.docker/config.json
+
+  script:
+    - echo "Creating OR validating version has been created"
+    # -  apk add curl jq bash
+    - export VERSION=$CI_COMMIT_REF_NAME
+    - export VERSION="another-check15"
+    - echo $VERSION
+    - echo $CI_COMMIT_REF_NAME
+    - |
+      curl --insecure -X 'POST'  "https://fortify.c2sf.mil/api/v1/projectVersions"   -H "accept: application/json"   -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}"   -H "Content-Type: application/json"   -d '{ "name" : "'"$VERSION"'" , "active" : true, "committed": false, "project" : { "id" : "184" }, "issueTemplateId": "Prioritized-HighRisk-Project-Template" }' > version_create.json
+    - |
+      curl --insecure -X "GET" "https://fortify.c2sf.mil/api/v1/projectVersions?q=name:$VERSION&projectId=184" -H "accept: application/json" -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" -H "Content-Type: application/json" > app.json
+    - |
+      echo "Checking version existance"
+      ls -l app.json
+      cat app.json | jq
+      # if [[ "$(cat app.json | jq .responseCode)" -ne "200" ]]; then
+      #   echo "Connection failed (HTTP $(jq -c .responseCode app.json)).  Likely network issue but check Token priv"
+      #   exit 1
+      # fi
+
+      if [[ "$(cat app.json | jq -c .responseCode)" -eq "200" ]]; then
+        echo "Connection succeeded"
+
+        if [[ $(cat app.json | jq .count) -eq "0" ]]; then
+            echo "Creating new version"
+            curl --insecure -X 'POST'   'https://fortify.c2sf.mil/api/v1/projectVersions'   -H 'accept: application/json'   -H 'Authorization: ${FORTIFY_API_TOKEN}'   -H 'Content-Type: application/json'   -d '{ "name" : "'"$VERSION"'" , "active" : true, "committed": false, "project" : { "id" : "184" }, "issueTemplateId": "Prioritized-HighRisk-Project-Template" }' > version_create.json
+              cat version_create.json
+
+
+            ls -l version_create.json
+        fi
+          echo "Outputing info"
+        if [[ -f version_create.json ]]; then
+
+          if [[ "$( cat version_create.json | jq -c '.responseCode' )" -eq "201" && "$( cat version_create.json | jq -c '.data.name' | tr -d '"' )" -eq $VERSION ]]; then
+            echo "Success on creation"
+            echo "Name of version:" $( jq -c ".data.name" version_create.json)
+            echo "Response code:" $( jq -c ".responseCode" version_create.json)
+          
+          elif [[ "$( cat version_create.json | jq -c '.responseCode' )" -eq "400" && "$( cat version_create.json | jq -c '.message' )" =~ "duplicate name" ]]; then
+            echo "Version found will use and update"
+            id_creation=$(cat app.json | jq -c '.data[]?.id' ) 
+          fi
+        fi
+      fi
+        echo "almost done"
+
+
+        
+        # if [[ -f version_create.json ]]; then
+        #   if [[ "$( cat version_create.json | jq -c '.responseCode' )" -eq "400" && "$( cat version_create.json | jq -c '.message' )" =~ "duplicate name" ]]; then
+        #     echo "Not using version_create.json"
+        
+        #     else { id_creation=$(cat version_create.json | jq -c '.data?.id' ) }
+        #   fi
+
+          # if [[ -f app.json && $id_creation -ne "" ]]; then
+          #   id_creation=$(cat app.json | jq -c '.data?.id' )
+          # fi
+        # fi
+        echo "Committing $id_creation"
+        curl --insecure -X "PUT" "https://fortify.c2sf.mil/api/v1/projectVersions/$id_creation" -H "accept: application/json" -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" -H "Content-Type: application/json" -d '{ "committed" : true }' | jq
+
+        exit 0
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"'
+      when: never # Do not run the pipeline for these branches
+    - when: always # Run the pipeline for all other branches
+
+  artifacts:
+    paths:
+      - app.json
+      - version_create.json
+
+fortify_scan: # This job runs in the build stage, which runs first.
+  image: docker-registry.c2sf.mil/factory/fortify-sca:latest
+
+  stage: scan
+  script:
+    - echo "Rules updates `fortifyupdate`"
+    - git config --global --add safe.directory $CI_BUILDS_DIR/$CI_PROJECT_PATH
+    - uname -a
+    # - sudo apt-get install -y ca-certificates
+    # - sudo cp local-ca.crt /usr/local/share/ca-certificates
+    # - sudo update-ca-certificates
+
+    - fortifyupdate
+    - echo "Analyzing all files"
+    - echo $CI_BUILDS_DIR
+    - echo "Getting files to scan"
+    - export files_to_scan=""
+    - export file_count=0
+    - file_count=(`git show --pretty="format:" --name-only`)
+
+    - |
+      if [[ $CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev" ]]; then
+          files_to_scan="$CI_BUILDS_DIR/$CI_PROJECT_PATH/src/htdocs/**/*"
+      else 
+        # echo "in else --"
+        echo ${#file_count[*]}
+        echo " Post file count"
+        for line in ${file_count[@]}; do
+              if [[ ${#file_count[*]} -gt "1" ]]; then 
+                files_to_scan+="$line " 
+              else
+               files_to_scan+="$line"
+              fi
+          echo $line
+            done
+      fi      
+
+      ls -l .
+
+    # - sourceanalyzer -verbose -b srcbuild $CI_BUILDS_DIR/cmis/cmis/src/htdocs/**/*
+
+    - sourceanalyzer -verbose -b srcbuild $files_to_scan
+
+    - echo "Setting FPRNAME"
+    - export FPRNAME=$(date +"%Y%m%d%H%M%S".fpr)
+    - echo "Creating FPR file"
+    - sourceanalyzer -verbose -b srcbuild -scan -f $FPRNAME
+    - echo "Deploying application to fortify"
+    - export VERSION=$CI_COMMIT_REF_NAME
+    - export VERSION="another-check15"
+    - echo $VERSION
+    - fortifyclient -debug -url $FORTIFY_URL -authtoken $FORTIFY_TOKEN uploadFPR -file $FPRNAME -application $PROJECT -applicationVersion $VERSION
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"'
+      when: never # Do not run the pipeline for these branches
+    - when: always # Run the pipeline for all other branches
+
+  artifacts:
+    paths:
+      - $CI_BUILDS_DIR/$CI_PROJECT_PATH/$FPRNAME
+    expire_in: 1 week
+    # - FPRUtility -information -listIssues -categoryIssueCounts -project $FPRNAME
+    # - FPRUtility -information -listIssues -search -query "[fortify priority order]:critical || [fortify priority order]:high || [fortify priority order]:medium" -project $FPRNAME -outputFormat CSV -f vuln.csv
+
+jira_ticket_apply_fortify_url:
+  #image: docker-registry.c2sf.mil/ironbank/opensource/debian/debian:latest
+  image: docker-registry.c2sf.mil/cmis/rockylinux:latest
+  stage: jira_ticket_link_apply
+  needs:
+    - job: fortify_version_create
+      artifacts: true
+  script:
+    # - |
+    #  curl --insecure -X "GET" "https://fortify.c2sf.mil/api/v1/projectVersions?q=name:$VERSION&projectId=184" -H "accept: application/json" -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" -H "Content-Type: application/json" > app.json
+    - |
+      if [[ -f version_create.json || -f app.json ]]; then
+          if [[ "$( cat version_create.json | jq -c '.responseCode' )" -eq "400" && "$( cat version_create.json | jq -c '.message' )" =~ "duplicate name" ]]; then
+              echo "Version found will use app.json value"
+              id_creation=$(cat app.json | jq -c '.data[].id' )
+          else {
+            id_creation=$(cat version_create.json | jq -c '.data?.id' )
+          }
+          fi
+      fi
+      echo $id_creation
+      ## LABEL - customfield_10272 
+      curl --fail --show-error --insecure -X PUT   'https://jira.c2sf.mil/rest/api/2/issue/CMIS-5'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json' -d '{ "update": { "labels": [ { "add": "'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'" } ] } }' 
+
+      # Remove <customfield> and make customfield used for URL
+      ##curl --fail --show-error --insecure -X PUT   'https://jira.c2sf.mil/rest/api/2/issue/CMIS-5'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json' -d '{ "update": { "<customfield>": [ { "set": "'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'" } ] } }'
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"'
+      when: never # Do not run the pipeline for these branches
+    - when: always # Run the pipeline for all other branches
+
