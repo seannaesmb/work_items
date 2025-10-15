@@ -1,0 +1,112 @@
+function main(workbook: ExcelScript.Workbook) {
+    const sheet = workbook.getActiveWorksheet();
+
+    // Settings
+    const startRow = 0;
+
+    let startCol = 33;           // Column A (zero-based)
+    const numberOfCells = 120;      // How many cells to fill
+    let textToInsert = "includes"; // Text to insert
+    let cell = ""  // Loop and set values
+    for (let i = 0; i < numberOfCells; i++) {
+        const cell = sheet.getCell(startRow, startCol + i);
+        //console.log(`${cell.getValue}`)
+        cell.setValue(textToInsert);
+    }
+    let newStart = numberOfCells + startCol + 1
+
+    console.log(`Current column: ${newStart}`)
+
+
+    let colIndex = newStart;
+
+    startCol = colIndex + 1;
+
+    textToInsert = "blocks"; // Text to insert
+    cell = ""  // Loop and set values
+    for (let i = 0; i < numberOfCells; i++) {
+        const cell = sheet.getCell(startRow, startCol + i);
+        cell.setValue(textToInsert);
+    }
+
+    newStart = numberOfCells + startCol + 1
+
+    console.log(`Current column: ${newStart}`)
+
+
+    colIndex = newStart;
+
+    startCol = colIndex.valueOf();
+
+    textToInsert = "relates"; // Text to insert
+    cell = ""  // Loop and set values
+    for (let i = 0; i < numberOfCells; i++) {
+        const cell = sheet.getCell(startRow, startCol + i);
+        cell.setValue(textToInsert);
+    }
+
+    newStart = numberOfCells + startCol + 1
+
+    console.log(`Current column: ${newStart}`)
+
+
+    colIndex = newStart;
+
+    startCol = colIndex.valueOf();
+
+    textToInsert = "duplicates"; // Text to insert
+    cell = ""  // Loop and set values
+    for (let i = 0; i < numberOfCells; i++) {
+        const cell = sheet.getCell(startRow, startCol + i);
+        cell.setValue(textToInsert);
+    }
+
+    newStart = numberOfCells + startCol+ 1
+
+    console.log(`Current column: ${newStart}`)
+
+
+    colIndex = newStart;
+
+    startCol = colIndex.valueOf();
+
+    textToInsert = "follows"; // Text to insert
+    cell = ""  // Loop and set values
+    for (let i = 0; i < numberOfCells; i++) {
+        const cell = sheet.getCell(startRow, startCol + i);
+        cell.setValue(textToInsert);
+    }
+
+    newStart = numberOfCells + startCol + 1
+
+     console.log(`Current column: ${newStart}`)
+
+
+    colIndex = newStart;
+
+    startCol = colIndex.valueOf();
+
+    textToInsert = "requires"; // Text to insert
+    cell = ""  // Loop and set values
+    for (let i = 0; i < numberOfCells; i++) {
+        const cell = sheet.getCell(startRow, startCol + i);
+        cell.setValue(textToInsert);
+    }
+
+    newStart = numberOfCells + startCol + 1
+
+     console.log(`Current column: ${newStart}`)
+
+
+    colIndex = newStart;
+
+    startCol = colIndex.valueOf();
+
+    textToInsert = "comment"; // Text to insert
+    cell = ""  // Loop and set values
+    for (let i = 0; i < numberOfCells; i++) {
+        const cell = sheet.getCell(startRow, startCol + i);
+        cell.setValue(textToInsert);
+    }
+
+}
