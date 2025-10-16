@@ -1,104 +1,110 @@
 function main(workbook: ExcelScript.Workbook) {
-  // Set references to worksheets
-  let mainSheet = workbook.getWorksheet("data-1752765316600_ISO-6987 (2)"); // Main sheet
-  let controlSheet = workbook.getWorksheet("all_relations"); // Control sheet with values
+    // Set references to worksheets
+    let mainSheet = workbook.getWorksheet("work_packages_202510151502_non_"); // Main sheet
+    let controlSheet = workbook.getWorksheet("relations_202510151103_non_asci"); // Control sheet with values
 
-  // Define the column in mainSheet to search for Value 3
-  const mainCol = "A"; // Column where Value 3 (RowValue) is searched
+    // Define the column in mainSheet to search for Value 3
+    const mainCol = "A"; // Column where Value 3 (RowValue) is searched
 
-  // Get the used range in controlSheet
-  let controlRange = controlSheet.getUsedRange();
-  let controlValues = controlRange.getValues();
-  let lastRow = controlValues.length;
+    // Get the used range in controlSheet
+    let controlRange = controlSheet.getUsedRange();
+    let controlValues = controlRange.getValues();
+    let lastRow = controlValues.length;
 
-  // Get the last column in mainSheet's header row
-  let mainHeaderRange = mainSheet.getRange("1:1").getUsedRange();
-  let lastCol = mainHeaderRange.getColumnCount();
-
-  // Loop through each row in controlSheet (starting from row 2, index 1)
-  for (let i = 1; i < lastRow; i++) {
-    // Store values from controlSheet
-    let value1 = controlValues[i][6] as string; // Value 1: Header (column A)
-    let value2 = controlValues[i][2]; // Value 2: Input value (column B)
-    let value3 = controlValues[i][1] as string; // Value 3: Row value (column C)
-
-    // Skip if any value is empty
-    if (!value1 || value2 === "" || !value3) {
-      controlSheet.getRange(`D${i + 1}`).setValue("Error: Missing value");
-      continue;
-    }
-
-    // Find the column with Value 1 (header) in mainSheet
+    // Get the last column in mainSheet's header row
     let mainHeaderRange = mainSheet.getRange("1:1").getUsedRange();
-    let headerValues = mainHeaderRange.getValues()[0];
-    let colIndex = -1;
-    for (let j = 0; j < headerValues.length; j++) {
-      if (headerValues[j] === value1) {
-        colIndex = j;
-        break;
-      }
-    }
+    let lastCol = mainHeaderRange.getColumnCount();
 
-    // Check if column was found
-    if (colIndex === -1) {
-      controlSheet.getRange(`D${i + 1}`).setValue(`Error: Header '${value1}' not found`);
-      continue;
-    }
-
-    // //- ORIG Find all rows with Value 3 in mainCol
-    // let mainColRange = mainSheet.getRange(`${mainCol}:${mainCol}`).getUsedRange();
-    // let mainColValues = mainColRange.getValues();
-    // let rowIndex = -1;
-    // for (let j = 1; j < mainColValues.length; j++) {
-    //   if (mainColValues[j][0] === value3) {
-    //     // Check if the intersection cell is empty
-    //     let intersectionCell = mainSheet.getCell(j, colIndex);
-    //     if (!intersectionCell.getValue()) {
-    //       rowIndex = j;
-    //       intersectionCell.setValue(value2);
-    //       controlSheet.getRange(`D${i + 1}`).setValue(`Success: Value entered at row ${rowIndex + 1}, col ${colIndex + 1}`);
-    //       break;
-    //     }
+    // Loop through each row in controlSheet (starting from row 2, index 1)
+    for (let i = 1; i < lastRow; i++) {
         
-    //   }
-    // }
+        // Store values from controlSheet
+        let value1 = controlValues[i][6] as string; // Value 1: Header (column G)
+        let value2 = controlValues[i][2]; // Value 2: Input value (column C)
+        let value3 = controlValues[i][1] as string; // Value 3: Row value (column B)
 
-  //   // If no empty intersection was found
-  //    if (rowIndex === -1) {
-  //        controlSheet.getRange(`D${i + 1}`).setValue(`Error: No empty intersection found for '${value3}'`);
-  //    }
-  // }
+        // Skip if any value is empty
+        if (!value1 || value2 === "" || !value3) {
+            controlSheet.getRange(`D${i + 1}`).setValue("Error: Missing value");
+            continue;
+        }
 
-    let mainColRange = mainSheet.getRange(`${mainCol}:${mainCol}`).getUsedRange();
-    let mainColValues = mainColRange.getValues();
-    let rowIndex = -1;
-    for (let j = 1; j < mainColValues.length; j++) {
-      if (mainColValues[j][0] === value3) {
-        rowIndex = j;
-        // Check intersection cell and move to next column if not empty
-        let currentCol = colIndex;
-        while (currentCol < lastCol) {
-          let intersectionCell = mainSheet.getCell(rowIndex, currentCol);
-          if (!intersectionCell.getValue()) {
-            intersectionCell.setValue(value2);
-            controlSheet.getRange(`D${i + 1}`).setValue(`Success: Value entered at row ${rowIndex + 1}, col ${currentCol + 1}`);
-            break;
-          }
-          currentCol++;
+        // Find the column with Value 1 (header) in mainSheet
+        let mainHeaderRange = mainSheet.getRange("1:1").getUsedRange();
+        let headerValues = mainHeaderRange.getValues()[0];
+        let colIndex = -1;
+        for (let j = 0; j < headerValues.length; j++) {
+            if (headerValues[j] === value1) {
+                colIndex = j;
+                break;
+            }
         }
-        // If no empty column was found in this row
-        if (currentCol >= lastCol) {
-          controlSheet.getRange(`D${i + 1}`).setValue(`Error: No empty column found for '${value3}' in row ${rowIndex + 1}`);
+
+        // Check if column was found
+        if (colIndex === -1) {
+            controlSheet.getRange(`D${i + 1}`).setValue(`Error: Header '${value1}' not found`);
+            continue;
         }
-        break; // Stop after processing the first matching row
-      }
+
+        // //- ORIG Find all rows with Value 3 in mainCol
+        // let mainColRange = mainSheet.getRange(`${mainCol}:${mainCol}`).getUsedRange();
+        // let mainColValues = mainColRange.getValues();
+        // let rowIndex = -1;
+        // for (let j = 1; j < mainColValues.length; j++) {
+        //   if (mainColValues[j][0] === value3) {
+        //     // Check if the intersection cell is empty
+        //     let intersectionCell = mainSheet.getCell(j, colIndex);
+        //     if (!intersectionCell.getValue()) {
+        //       rowIndex = j;
+        //       intersectionCell.setValue(value2);
+        //       controlSheet.getRange(`D${i + 1}`).setValue(`Success: Value entered at row ${rowIndex + 1}, col ${colIndex + 1}`);
+        //       break;
+        //     }
+
+        //   }
+        // }
+
+        //   // If no empty intersection was found
+        //    if (rowIndex === -1) {
+        //        controlSheet.getRange(`D${i + 1}`).setValue(`Error: No empty intersection found for '${value3}'`);
+        //    }
+        // }
+
+        let mainColRange = mainSheet.getRange(`${mainCol}:${mainCol}`).getUsedRange();
+        let mainColValues = mainColRange.getValues();
+        let rowIndex = -1;
+        //Set to start at next item that's not null
+        if (controlSheet.getRange(`D${i + 1}`).getValue() == "" ){
+            console.log("NOT Null continuing")
+                    for (let j = 1; j < mainColValues.length; j++) {
+            if (mainColValues[j][0] === value3) {
+                rowIndex = j;
+                // Check intersection cell and move to next column if not empty
+                let currentCol = colIndex;
+                while (currentCol < lastCol) {
+                    let intersectionCell = mainSheet.getCell(rowIndex, currentCol);
+                    if (!intersectionCell.getValue()) {
+                        intersectionCell.setValue(value2);
+                      //  console.log (controlSheet.getRange(`D${i + 1}`).getValue())
+                        controlSheet.getRange(`D${i + 1}`).setValue(`Success: Value entered at row ${rowIndex + 1}, col ${currentCol + 1}`);
+                        break;
+                    }
+                    currentCol++;
+                }
+                // If no empty column was found in this row
+                if (currentCol >= lastCol) {
+                    controlSheet.getRange(`D${i + 1}`).setValue(`Error: No empty column found for '${value3}' in row ${rowIndex + 1}`);
+                }
+                break; // Stop after processing the first matching row
+            }
+        }
     }
 
-    // If no row was found
-    if (rowIndex === -1) {
-      controlSheet.getRange(`D${i + 1}`).setValue(`Error: Row value '${value3}' not found`);
+        // If no row was found
+        if (rowIndex === -1) {
+            controlSheet.getRange(`D${i + 1}`).setValue(`Error: Row value '${value3}' not found`);
+        }
     }
-  }
 
-  console.log("Processing complete! Check column D in control sheet for results.");
+    console.log("Processing complete! Check column D in control sheet for results.");
 }

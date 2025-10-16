@@ -81,6 +81,10 @@ function main(workbook: ExcelScript.Workbook) {
         let mainColRange = mainSheet.getRange(`${mainCol}:${mainCol}`).getUsedRange();
         let mainColValues = mainColRange.getValues();
         let rowIndex = -1;
+    //Set to start at next item that's not null
+    if (controlSheet.getRange(`D${i + 1}`).getValue() == "" ){
+        console.log("NOT Null continuing")
+
         for (let j = 1; j < mainColValues.length; j++) {
             if (mainColValues[j][0] === value3) {
                 rowIndex = j;
@@ -105,6 +109,7 @@ function main(workbook: ExcelScript.Workbook) {
                 break; // Stop after processing the first matching row
             }
         }
+    }
 
         // If no row was found
         if (rowIndex === -1) {
