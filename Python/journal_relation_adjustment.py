@@ -4,7 +4,7 @@ from collections import defaultdict
 # Load workbook and worksheets
 wb = openpyxl.load_workbook("C:\\projects\\sbrown\\Book2.xlsx")
 master_ws = wb["Sheet1"]
-control_ws = wb["Sheet2"]
+control_ws = wb["Sheet4"]
 
 # Step 1: Map Master column headers (Row 1) to all matching columns
 header_map = defaultdict(list)
