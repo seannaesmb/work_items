@@ -82,7 +82,7 @@ function main(workbook: ExcelScript.Workbook) {
         let mainColValues = mainColRange.getValues();
         let rowIndex = -1;
     //Set to start at next item that's not null
-    if (controlSheet.getRange(`D${i + 1}`).getValue() == "" ){
+    if (controlSheet.getRange(`F${i + 1}`).getValue() == "" ){
         console.log("NOT Null continuing")
 
         for (let j = 1; j < mainColValues.length; j++) {
