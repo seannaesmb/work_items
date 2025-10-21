@@ -2,9 +2,9 @@ import openpyxl
 from collections import defaultdict
 
 # Load workbook and worksheets
-wb = openpyxl.load_workbook("C:\\projects\\sbrown\\Book1.xlsx")
-master_ws = wb["Sheet1"]
-control_ws = wb["Sheet2"]
+wb = openpyxl.load_workbook("C:\\projects\\sbrown\\jira_data_import_workbook.xlsx")
+master_ws = wb["work_packages_202510151502_ (3)"]
+control_ws = wb["relations_202510151103_non_ (2)"]
 
 # Step 1: Map headers in Master to all column indexes where they appear
 header_row = 1
