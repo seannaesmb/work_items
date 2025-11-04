@@ -1,0 +1,204 @@
+{
+  "config.version" : "2.0",
+  "config.project.from.csv" : "false",
+  "config.encoding" : "UTF-8",
+  "config.email.suffix" : "@",
+  "config.field.mappings" : {
+    "duplicates" : {
+      "link.type" : "10002"
+    },
+    "assigned_to_id" : {
+      "jira.field" : "assignee"
+    },
+    "relates" : {
+      "link.type" : "10003"
+    },
+    "blocks" : {
+      "link.type" : "10000"
+    },
+    "type_id" : {
+      "jira.field" : "issuetype"
+    },
+    "subject" : {
+      "jira.field" : "summary"
+    },
+    "follows" : {
+      "link.type" : "10204"
+    },
+    "created_at" : {
+      "jira.field" : "created"
+    },
+    "description" : {
+      "jira.field" : "description"
+    },
+    "includes" : {
+      "link.type" : "10202"
+    },
+    "priority_id" : {
+      "jira.field" : "priority"
+    },
+    "status_id" : {
+      "jira.field" : "status"
+    },
+    "updated_at" : {
+      "jira.field" : "updated"
+    },
+    "parent_id" : {
+      "jira.field" : "subtask-parent-id"
+    },
+    "comment" : {
+      "jira.field" : "comment"
+    },
+    "id" : {
+      "jira.field" : "issue-id"
+    },
+    "map_version" : {
+      "jira.field" : "versions"
+    },
+    "requires" : {
+      "link.type" : "10207"
+    },
+    "start_date" : {
+      "existing.custom.field" : "10101"
+    }
+  },
+  "config.value.mappings" : {
+    "assigned_to_id" : {
+      "45" : "sbrown.dev",
+      "47" : "sbrown.dev",
+      "1022" : "sbrown.dev",
+      "1021" : "sbrown.dev",
+      "1020" : "sbrown.dev",
+      "154" : "sbrown.dev",
+      "1014" : "sbrown.dev",
+      "50" : "sbrown.dev",
+      "51" : "sbrown.dev",
+      "52" : "sbrown.dev",
+      "10" : "sbrown.dev",
+      "11" : "sbrown.dev",
+      "12" : "sbrown.dev",
+      "13" : "sbrown.dev",
+      "57" : "sbrown.dev",
+      "14" : "sbrown.dev",
+      "58" : "sbrown.dev",
+      "15" : "sbrown.dev",
+      "16" : "sbrown.dev",
+      "17" : "sbrown.dev",
+      "18" : "sbrown.dev",
+      "1033" : "sbrown.dev",
+      "19" : "sbrown.dev",
+      "280" : "sbrown.dev",
+      "1026" : "sbrown.dev",
+      "6" : "sbrown.dev",
+      "7" : "sbrown.dev",
+      "8" : "sbrown.dev",
+      "9" : "sbrown.dev",
+      "60" : "sbrown.dev",
+      "20" : "sbrown.dev",
+      "21" : "sbrown.dev",
+      "22" : "sbrown.dev",
+      "23" : "sbrown.dev",
+      "67" : "sbrown.dev",
+      "24" : "sbrown.dev",
+      "25" : "sbrown.dev",
+      "26" : "sbrown.dev",
+      "27" : "sbrown.dev",
+      "28" : "sbrown.dev",
+      "29" : "sbrown.dev",
+      "1044" : "sbrown.dev",
+      "1041" : "sbrown.dev",
+      "1037" : "sbrown.dev",
+      "1036" : "sbrown.dev",
+      "1035" : "sbrown.dev",
+      "1034" : "sbrown.dev",
+      "30" : "sbrown.dev",
+      "32" : "sbrown.dev",
+      "33" : "sbrown.dev",
+      "34" : "sbrown.dev",
+      "35" : "sbrown.dev",
+      "38" : "sbrown.dev",
+      "39" : "sbrown.dev",
+      "1011" : "sbrown.dev",
+      "1010" : "sbrown.dev",
+      "143" : "sbrown.dev",
+      "145" : "sbrown.dev",
+      "1004" : "sbrown.dev",
+      "40" : "sbrown.dev",
+      "41" : "sbrown.dev",
+      "42" : "sbrown.dev",
+      "1009" : "sbrown.dev",
+      "43" : "sbrown.dev"
+    },
+    "priority_id" : {
+      "14" : "2",
+      "15" : "1",
+      "7" : "5",
+      "8" : "4",
+      "9" : "3",
+      "10" : "3"
+    },
+    "status_id" : {
+      "23" : "10105",
+      "24" : "10105",
+      "25" : "6",
+      "26" : "10105",
+      "27" : "10000",
+      "28" : "10105",
+      "29" : "10105",
+      "11" : "10105",
+      "12" : "10000",
+      "13" : "10105",
+      "14" : "10105",
+      "15" : "10105",
+      "16" : "3",
+      "17" : "10105",
+      "18" : "10105",
+      "19" : "3",
+      "1" : "10000",
+      "2" : "10105",
+      "4" : "10105",
+      "6" : "10105",
+      "7" : "3",
+      "8" : "10105",
+      "9" : "10105",
+      "20" : "6",
+      "21" : "10105"
+    },
+    "type_id" : {
+      "11" : "10012",
+      "22" : "10021",
+      "23" : "10022",
+      "12" : "10013",
+      "13" : "10014",
+      "24" : "10023",
+      "14" : "10015",
+      "15" : "10016",
+      "16" : "10017",
+      "17" : "10003",
+      "18" : "10018",
+      "1" : "10002",
+      "2" : "10007",
+      "3" : "10008",
+      "4" : "10009",
+      "5" : "10000",
+      "6" : "10001",
+      "7" : "10004",
+      "8" : "10202",
+      "9" : "10011",
+      "20" : "10019",
+      "21" : "10020",
+      "10" : "10001"
+    }
+  },
+  "config.delimiter" : ",",
+  "config.project" : {
+    "project.type" : null,
+    "project.key" : "CMIS",
+    "project.description" : null,
+    "project.url" : null,
+    "project.name" : "Corporate Management Information System",
+    "project.lead" : null
+  },
+  "config.date.format" : "dd/MMM/yy h:mm a",
+  "config.create.and.assign.default.project.role" : "false"
+}
