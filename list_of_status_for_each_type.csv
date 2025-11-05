@@ -1,19 +1,19 @@
-﻿TYPE 1 [Status],,,Type 1 STATUS,Type 2 STATUS,Type 3 STATUS,Type 4 Status,Type 5 Status,Type 6 Status,Type 7 Status,Type 8 Status,Type 9 Status,Type 10 Status,Type 11 Status,Type 12 Status,Type 13 Status,Type 14 Status,Type 15 Status,Type 16 Status,Type 17 Status,Type 18 Status,Type 19 Status,Type 20 Status,Type 21 Status,Type 22 Status,Type 23 Status,Type 24 Status,Type 25 Status
-1,,,1,1,12,7,12,4,12,1,1,12,1,12,12,7,12,13,12,1,12,12,1,12,12,12,1
-12,,,12,28,1,12,1,12,7,12,27,1,7,1,1,16,7,1,1,12,1,,12,27,27,7,12
-14,,,17,12,27,1,27,26,1,7,12,17,27,13,16,12,27,12,27,23,6,,7,1,1,1,14
-,,,26,7,7,13,,14,27,17,14,,12,27,14,27,13,27,7,27,11,,14,,,27,
-,,,27,27,,,,1,14,,20,,,4,28,1,1,,23,,27,,21,,,17,
-,,,7,,,,,27,21,,13,,,7,27,17,4,,8,,23,,24,,,16,
-,,,23,,,,,25,9,,7,,,17,,,,,17,,,,17,,,13,
-,,,13,,,,,13,17,,21,,,19,,,,,13,,,,6,,,,
-,,,24,,,,,6,16,,,,,14,,,,,14,,,,27,,,,
-,,,21,,,,,,13,,,,,29,,,,,16,,,,13,,,,
-,,,9,,,,,,,,,,,23,,,,,18,,,,15,,,,
-,,,6,,,,,,,,,,,8,,,,,,,,,23,,,,
-,,,14,,,,,,,,,,,24,,,,,,,,,,,,,
-,,,16,,,,,,,,,,,9,,,,,,,,,,,,,
-,,,4,,,,,,,,,,,15,,,,,,,,,,,,,
-,,,15,,,,,,,,,,,2,,,,,,,,,,,,,
-,,,25,,,,,,,,,,,11,,,,,,,,,,,,,
-,,,18,,,,,,,,,,,,,,,,,,,,,,,,
+﻿TYPE 1 [Status],,,Task, Milestone, Phase, Feature, Epic, User story, Bug, Technical Task, Technical Debt, Story, Documentation, Requirement, Defect, Action item, Help desk ticket, New feature, Sub-task, Info request, Test, Review task, External Ticket, Risk, Meeting, Improvement, External Task
+1,,,New,New,Closed,In progress,Closed,Confirmed,Closed,New,New,Closed,New,Closed,Closed,In progress,Closed,On hold,Closed,New,Closed,Closed,New,Closed,Closed,Closed,New
+12,,,Closed,In progress (Past Due),New,Closed,New,Closed,In progress,Closed,OBE,New,In progress,New,New,In review,In progress,New,New,Closed,New,,Closed,OBE,OBE,In progress,Closed
+14,,,Acceptance test,Closed,OBE,New,OBE,Stakeholder Review,New,In progress,Closed,Acceptance test,OBE,On hold,In review,Closed,OBE,Closed,OBE,Block/on hold,Scheduled,,In progress,New,New,New,Rejected
+,,,Stakeholder Review,In progress,In progress,On hold,,Rejected,OBE,Acceptance test,Rejected,,Closed,OBE,Rejected,OBE,On hold,OBE,In progress,OBE,Test failed,,Rejected,,,OBE,
+,,,OBE,OBE,,,,New,Rejected,,Test/review,,,Confirmed,In progress (Past Due),New,New,,Block/on hold,,OBE,,Test passed: ready for review,,,Acceptance test,
+,,,In progress,,,,,OBE,Test passed: ready for review,,On hold,,,In progress,OBE,Acceptance test,Confirmed,,Developed,,Block/on hold,,Testing & Acceptance,,,In review,
+,,,Block/on hold,,,,,Peer Review,In testing,,In progress,,,Acceptance test,,,,,Acceptance test,,,,Acceptance test,,,On hold,
+,,,On hold,,,,,On hold,Acceptance test,,Test passed: ready for review,,,Under review/investigation,,,,,On hold,,,,Scheduled,,,,
+,,,Testing & Acceptance,,,,,Scheduled,In review,,,,,Rejected,,,,,Rejected,,,,OBE,,,,
+,,,Test passed: ready for review,,,,,,On hold,,,,,Cancelled,,,,,In review,,,,On hold,,,,
+,,,In testing,,,,,,,,,,,Block/on hold,,,,,Graveyard,,,,Blocked,,,,
+,,,Scheduled,,,,,,,,,,,Developed,,,,,,,,,Block/on hold,,,,
+,,,Rejected,,,,,,,,,,,Testing & Acceptance,,,,,,,,,,,,,
+,,,In review,,,,,,,,,,,In testing,,,,,,,,,,,,,
+,,,Confirmed,,,,,,,,,,,Blocked,,,,,,,,,,,,,
+,,,Blocked,,,,,,,,,,,In specification,,,,,,,,,,,,,
+,,,Peer Review,,,,,,,,,,,Test failed,,,,,,,,,,,,,
+,,,Graveyard,,,,,,,,,,,,,,,,,,,,,,,,
