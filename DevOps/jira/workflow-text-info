@@ -1,0 +1,74 @@
+🧩 Workflow Overview
+1. Backlog / Planning Phase
+
+New → initial issue creation
+
+Scheduled → planned and ready to start
+
+OBE (Overcome By Events) → issue no longer relevant (dead end path to “Graveyard”)
+
+Transitions:
+
+New → Scheduled (when approved for work)
+
+New → OBE → Graveyard (if canceled before work begins) **Make an automated from OBE to graveyard**
+
+2. Execution Phase
+
+In Progress → work actively happening
+
+Blocked / Block/On Hold / On Hold → temporarily paused due to dependencies or issues
+
+Transitions:
+
+Scheduled → In Progress
+
+In Progress → Blocked / On Hold / Block/On Hold (when blocked)
+
+Blocked / On Hold / Block/On Hold → In Progress (when unblocked)
+
+In Progress → Peer Review (work completed, ready for team check)
+
+3. Review & Testing Phase
+
+Peer Review → internal dev review
+
+In Review / Stakeholder Review → formal review by stakeholders
+
+Acceptance Test / In Testing / Testing & Acceptance → QA/testing phase
+
+Test Passed: Ready for Review → QA success, pending final review
+
+Transitions:
+
+Peer Review → In Review
+
+In Review → Stakeholder Review
+
+Stakeholder Review → Acceptance Test
+
+Acceptance Test → In Testing → Testing & Acceptance
+
+Testing & Acceptance → Test Passed: Ready for Review
+
+Any Testing Status → Rejected (if test fails, loops back to In Progress)
+
+4. Completion Phase
+
+Confirmed → final stakeholder sign-off
+
+Closed → officially done
+
+Rejected → not approved (may return to In Progress or end in Graveyard)
+
+Graveyard → archived / dead issues (OBE, obsolete, or canceled)
+
+Transitions:
+
+Test Passed: Ready for Review → Confirmed → Closed
+
+Rejected → In Progress (retry)
+
+OBE → Graveyard
+
+Rejected → Graveyard (if permanently closed)
