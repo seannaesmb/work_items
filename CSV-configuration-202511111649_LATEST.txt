@@ -1,0 +1,234 @@
+{
+  "config.version" : "2.0",
+  "config.project.from.csv" : "false",
+  "config.encoding" : "UTF-8",
+  "config.email.suffix" : "@",
+  "config.field.mappings" : {
+    "duplicates" : {
+      "link.type" : "10002"
+    },
+    "assigned_to_id" : {
+      "jira.field" : "assignee"
+    },
+    "relates" : {
+      "link.type" : "10003"
+    },
+    "blocks" : {
+      "link.type" : "10000"
+    },
+    "type_id" : {
+      "jira.field" : "issuetype"
+    },
+    "subject" : {
+      "jira.field" : "summary"
+    },
+    "follows" : {
+      "link.type" : "10204"
+    },
+    "id_tick_leg" : {
+      "existing.custom.field" : "10501"
+    },
+    "created_at" : {
+      "jira.field" : "created"
+    },
+    "description" : {
+      "jira.field" : "description"
+    },
+    "includes" : {
+      "link.type" : "10202"
+    },
+    "priority_id" : {
+      "jira.field" : "priority"
+    },
+    "status_id" : {
+      "jira.field" : "status"
+    },
+    "updated_at" : {
+      "jira.field" : "updated"
+    },
+    "project_id" : {
+      "existing.custom.field" : "10500"
+    },
+    "parent_id" : {
+      "jira.field" : "subtask-parent-id"
+    },
+    "comment" : {
+      "jira.field" : "comment"
+    },
+    "id" : {
+      "jira.field" : "issue-id"
+    },
+    "map_version" : {
+      "jira.field" : "fixVersions"
+    },
+    "requires" : {
+      "link.type" : "10207"
+    },
+    "start_date" : {
+      "existing.custom.field" : "10101"
+    }
+  },
+  "config.value.mappings" : {
+    "assigned_to_id" : {
+      "45" : "sbrown.dev",
+      "47" : "sbrown.dev",
+      "1022" : "sbrown.dev",
+      "1021" : "sbrown.dev",
+      "1020" : "sbrown.dev",
+      "154" : "sbrown.dev",
+      "1014" : "sbrown.dev",
+      "50" : "sbrown.dev",
+      "51" : "sbrown.dev",
+      "52" : "sbrown.dev",
+      "10" : "sbrown.dev",
+      "11" : "sbrown.dev",
+      "12" : "sbrown.dev",
+      "13" : "sbrown.dev",
+      "57" : "sbrown.dev",
+      "58" : "sbrown.dev",
+      "14" : "sbrown.dev",
+      "15" : "sbrown.dev",
+      "16" : "sbrown.dev",
+      "17" : "sbrown.dev",
+      "18" : "sbrown.dev",
+      "19" : "sbrown.dev",
+      "1033" : "sbrown.dev",
+      "280" : "sbrown.dev",
+      "1026" : "sbrown.dev",
+      "6" : "sbrown.dev",
+      "7" : "sbrown.dev",
+      "8" : "sbrown.dev",
+      "9" : "sbrown.dev",
+      "60" : "sbrown.dev",
+      "20" : "sbrown.dev",
+      "21" : "sbrown.dev",
+      "22" : "sbrown.dev",
+      "67" : "sbrown.dev",
+      "23" : "sbrown.dev",
+      "24" : "sbrown.dev",
+      "25" : "sbrown.dev",
+      "26" : "sbrown.dev",
+      "27" : "sbrown.dev",
+      "28" : "sbrown.dev",
+      "29" : "sbrown.dev",
+      "1044" : "sbrown.dev",
+      "1041" : "sbrown.dev",
+      "1037" : "sbrown.dev",
+      "1036" : "sbrown.dev",
+      "1035" : "sbrown.dev",
+      "1034" : "sbrown.dev",
+      "30" : "sbrown.dev",
+      "32" : "sbrown.dev",
+      "33" : "sbrown.dev",
+      "34" : "sbrown.dev",
+      "35" : "sbrown.dev",
+      "38" : "sbrown.dev",
+      "39" : "sbrown.dev",
+      "1011" : "sbrown.dev",
+      "1010" : "sbrown.dev",
+      "143" : "sbrown.dev",
+      "145" : "sbrown.dev",
+      "1004" : "sbrown.dev",
+      "40" : "sbrown.dev",
+      "41" : "sbrown.dev",
+      "42" : "sbrown.dev",
+      "43" : "sbrown.dev",
+      "1009" : "sbrown.dev"
+    },
+    "priority_id" : {
+      "14" : "2",
+      "15" : "1",
+      "7" : "5",
+      "8" : "4",
+      "9" : "3",
+      "10" : "3"
+    },
+    "status_id" : {
+      "23" : "10105",
+      "24" : "10102",
+      "25" : "10110",
+      "26" : "10112",
+      "27" : "10212",
+      "28" : "10213",
+      "29" : "10214",
+      "11" : "10206",
+      "12" : "6",
+      "13" : "10103",
+      "14" : "10106",
+      "15" : "10103",
+      "16" : "10207",
+      "17" : "10102",
+      "18" : "10208",
+      "19" : "10209",
+      "1" : "1",
+      "2" : "10100",
+      "4" : "10300",
+      "6" : "10202",
+      "7" : "3",
+      "8" : "10203",
+      "9" : "10102",
+      "20" : "10210",
+      "21" : "10108"
+    },
+    "project_id" : {
+      "11" : "LMS",
+      "22" : "DDSO-IDEAS-AGC",
+      "12" : "DDSO-DI",
+      "13" : "DDSO-FABS",
+      "25" : "DCF",
+      "14" : "DDSO-CSS",
+      "15" : "DDSO-EDMS",
+      "16" : "DDSO-TIBI",
+      "17" : "DDSO-IS",
+      "18" : "DDSO-DFMS",
+      "19" : "DDSO-DSF",
+      "1" : "Demo Project",
+      "3" : "CMIS",
+      "4" : "DDSO",
+      "5" : "DP",
+      "6" : "IWMS",
+      "8" : "DDSO-IWMS",
+      "9" : "DDSO-CMIS",
+      "20" : "DDSO-CORAS",
+      "21" : "DDSO-FAMIS-WCF"
+    },
+    "type_id" : {
+      "22" : "10021",
+      "23" : "10022",
+      "24" : "10023",
+      "25" : "10125",
+      "10" : "10001",
+      "11" : "10012",
+      "12" : "10013",
+      "13" : "10014",
+      "14" : "10015",
+      "15" : "10016",
+      "16" : "10017",
+      "17" : "10003",
+      "18" : "10018",
+      "19" : "10204",
+      "1" : "10002",
+      "2" : "10007",
+      "3" : "10008",
+      "4" : "10009",
+      "5" : "10000",
+      "6" : "10109",
+      "7" : "10004",
+      "8" : "10112",
+      "9" : "10011",
+      "20" : "10019",
+      "21" : "10020"
+    }
+  },
+  "config.delimiter" : ",",
+  "config.project" : {
+    "project.type" : null,
+    "project.key" : "CMIS",
+    "project.description" : null,
+    "project.url" : null,
+    "project.name" : "Corporate Management Information System",
+    "project.lead" : null
+  },
+  "config.date.format" : "dd/MMM/yy h:mm a",
+  "config.create.and.assign.default.project.role" : "false"
+}
