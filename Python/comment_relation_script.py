@@ -3,7 +3,7 @@ from collections import defaultdict
 
 # Load workbook and worksheets
 wb = openpyxl.load_workbook("C:\\projects\\sbrown\\jira_data_import_workbook.xlsx")
-master_ws = wb["work_packages_202510151502_non_"]
+master_ws = wb["jira_data_import_workbook_impor"]
 control_ws = wb["journals_202510161040_ascii (5)"]
 
 # Step 1: Map Master column headers (Row 1) to all matching columns
