@@ -201,10 +201,11 @@ jira_ticket_apply_fortify_url:
           fi
       fi
       echo $id_creation
+      issue_key=`echo $CI_COMMIT_MESSAGE | grep -oE '\b[C][A-Z0-9_]+-[1-9][0-9]*'`
       ## LABEL - customfield_10272 
       ## FORTIFY_URL - Staging is - customfield_11300
-      ##curl --fail --show-error --insecure -X PUT   'https://jira.c2sf.mil/rest/api/2/issue/CMIS-5'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json' -d '{ "update": { "labels": [ { "add": "'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'" } ] } }' 
-      curl --fail --show-error --insecure -X PUT   'https://jira-opsstaging.c2sf.mil/rest/api/2/issue/CMIS-15358'   -H 'accept: application/json'   -H 'Authorization: Bearer MDExNTczODQyNjgzOpPWxRWAfQAWHMXmcAw4FNvOROdy'   -H 'Content-Type: application/json' -d '{ "fields": { "customfield_11300":"'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'"} }'
+      ##curl --fail --show-error --insecure -X PUT   'https://jira.c2sf.mil/rest/api/2/issue/CMIS-5'   -H 'accept: application/json'   -H "Authorization: Bearer $JIRA_TOKEN"   -H 'Content-Type: application/json' -d '{ "update": { "labels": [ { "add": "'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'" } ] } }' 
+      curl --fail --show-error --insecure -X PUT   "https://jira-opsstaging.c2sf.mil/rest/api/2/issue/$issue_key"   -H 'accept: application/json'   -H "Authorization: Bearer $JIRA_TOKEN"   -H 'Content-Type: application/json' -d '{ "fields": { "customfield_11300":"'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'"} }'
 
       # Remove <customfield> and make customfield used for URL
       ##curl --fail --show-error --insecure -X PUT   'https://jira.c2sf.mil/rest/api/2/issue/CMIS-5'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json' -d '{ "update": { "<customfield>": [ { "set": "'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'" } ] } }'
