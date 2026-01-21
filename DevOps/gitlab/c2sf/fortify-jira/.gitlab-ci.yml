@@ -202,7 +202,9 @@ jira_ticket_apply_fortify_url:
       fi
       echo $id_creation
       ## LABEL - customfield_10272 
-      curl --fail --show-error --insecure -X PUT   'https://jira.c2sf.mil/rest/api/2/issue/CMIS-5'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json' -d '{ "update": { "labels": [ { "add": "'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'" } ] } }' 
+      ## FORTIFY_URL - Staging is - customfield_11300
+      ##curl --fail --show-error --insecure -X PUT   'https://jira.c2sf.mil/rest/api/2/issue/CMIS-5'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json' -d '{ "update": { "labels": [ { "add": "'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'" } ] } }' 
+      curl --fail --show-error --insecure -X PUT   'https://jira-opsstaging.c2sf.mil/rest/api/2/issue/CMIS-15358'   -H 'accept: application/json'   -H 'Authorization: Bearer MDExNTczODQyNjgzOpPWxRWAfQAWHMXmcAw4FNvOROdy'   -H 'Content-Type: application/json' -d '{ "fields": { "customfield_11300":"'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'"} }'
 
       # Remove <customfield> and make customfield used for URL
       ##curl --fail --show-error --insecure -X PUT   'https://jira.c2sf.mil/rest/api/2/issue/CMIS-5'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json' -d '{ "update": { "<customfield>": [ { "set": "'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'" } ] } }'
