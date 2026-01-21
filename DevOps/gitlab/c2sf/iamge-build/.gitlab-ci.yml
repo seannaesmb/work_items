@@ -6,7 +6,7 @@ build-job:
   stage: build
   variables:
     DOCKER_CF_INFO: "rockylinux"
-    DOCKER_CF_TAG: "8.9"
+    DOCKER_CF_TAG: "9"
   before_script:
     - mkdir -p $HOME/.docker
     - echo $DOCKER_AUTH_CONFIG > $HOME/.docker/config.json
