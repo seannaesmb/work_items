@@ -20,6 +20,7 @@ stages: # List of stages for jobs, and their order of execution
   - fortify_version_create
   - scan
   - jira_ticket_link_apply
+  - test
 
 variables:
   FORTIFY_BUILD_ID: "sandbox_1"
@@ -106,7 +107,7 @@ fortify_version_create:
 
         exit 0
   rules:
-    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"'
+    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"  || $CI_PIPELINE_SOURCE == "merge_request_event"'
       when: never # Do not run the pipeline for these branches
     - when: always # Run the pipeline for all other branches
 
@@ -169,7 +170,7 @@ fortify_scan: # This job runs in the build stage, which runs first.
     - fortifyclient -debug -url $FORTIFY_URL -authtoken $FORTIFY_TOKEN uploadFPR -file $FPRNAME -application $PROJECT -applicationVersion $VERSION
 
   rules:
-    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"'
+    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"  || $CI_PIPELINE_SOURCE == "merge_request_event"'
       when: never # Do not run the pipeline for these branches
     - when: always # Run the pipeline for all other branches
 
@@ -211,7 +212,7 @@ jira_ticket_apply_fortify_url:
       ##curl --fail --show-error --insecure -X PUT   'https://jira.c2sf.mil/rest/api/2/issue/CMIS-5'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json' -d '{ "update": { "<customfield>": [ { "set": "'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'" } ] } }'
 
   rules:
-    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"'
+    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"  || $CI_PIPELINE_SOURCE == "merge_request_event"'
       when: never # Do not run the pipeline for these branches
     - when: always # Run the pipeline for all other branches
 
