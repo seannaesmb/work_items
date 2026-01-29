@@ -1,10 +1,16 @@
 import openpyxl
 from collections import defaultdict
 
+from datetime import datetime
+
+
+now = datetime.now()
+formatted_date = now.strftime("%Y-%m-%d-%H-%M")
+print(f"Formatted Date: {formatted_date}")
 # Load workbook and worksheets
-wb = openpyxl.load_workbook("C:\\projects\\sbrown\\jira_data_import_workbook.xlsx")
-master_ws = wb["jira_data_import_workbook_impor"]
-control_ws = wb["journals_202510161040_ascii (5)"]
+wb = openpyxl.load_workbook("C:\\projects\\sbrown\\Python\\temp_exports_for_db\\fullworkbook_second_attempt.xlsx")
+master_ws = wb["Sheet1"]
+control_ws = wb["Sheet2"]
 
 # Step 1: Map Master column headers (Row 1) to all matching columns
 header_map = defaultdict(list)
@@ -26,7 +32,7 @@ usage_tracker = defaultdict(int)
 # Step 4: Process each row in Control sheet safely
 for row in range(2, control_ws.max_row + 1):
     row_key = control_ws.cell(row=row, column=1).value       # Column A
-    value_to_insert = control_ws.cell(row=row, column=5).value  # Column E
+    value_to_insert = control_ws.cell(row=row, column=6).value  # Column E
     col_header = "comment"   # Column C
 
     # Skip if row is blank or incomplete
@@ -55,5 +61,8 @@ for row in range(2, control_ws.max_row + 1):
             print(f"⚠️ Column header '{col_header_str}' not found in Master sheet")
 
 # Save workbook
-wb.save("updated_workbook.xlsx")
-print("✅ Done. Saved as 'updated_workbook.xlsx'")
+wb.save("C:\\projects\\sbrown\\Python\\temp_exports_for_db\\second_updated_workbook-relations-comments.xlsx")
+print("✅ Done. Saved as 'second_updated_workbook-relations-comments.xlsx'")
+now = datetime.now()
+formatted_date = now.strftime("%Y-%m-%d-%H-%M")
+print(f"Formatted Date: {formatted_date}")

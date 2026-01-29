@@ -1,10 +1,16 @@
 import openpyxl
 from collections import defaultdict
+from datetime import datetime
 
+
+now = datetime.now()
+formatted_date = now.strftime("%Y-%m-%d-%H-%M")
+print(f"Formatted Date: {formatted_date}")
 # Load workbook and worksheets
-wb = openpyxl.load_workbook("C:\\projects\\sbrown\\jira_data_import_workbook.xlsx")
-master_ws = wb["work_packages_202510151502_ (3)"]
-control_ws = wb["relations_202510151103_non_ (2)"]
+wb = openpyxl.load_workbook("C:\\projects\\sbrown\\Python\\temp_exports_for_db\\fullworkbook_second_attempt.xlsx")
+master_ws = wb["Sheet1"]
+control_ws = wb["relations_202601280944_non_asci"]
+
 
 # Step 1: Map headers in Master to all column indexes where they appear
 header_row = 1
@@ -60,5 +66,8 @@ while True:
     row += 1
 
 # Save workbook
-wb.save("updated_workbook.xlsx")
-print("✅ Master sheet updated and saved as 'updated_workbook.xlsx'")
+wb.save("C:\\projects\\sbrown\\Python\\temp_exports_for_db\\second_updated_workbook-relations.xlsx")
+print("✅ Master sheet updated and saved as 'second_updated_workbook.xlsx'")
+now = datetime.now()
+formatted_date = now.strftime("%Y-%m-%d-%H-%M")
+print(f"Formatted Date: {formatted_date}")

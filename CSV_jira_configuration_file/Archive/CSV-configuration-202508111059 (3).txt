@@ -1,0 +1,135 @@
+{
+  "config.version" : "2.0",
+  "config.project.from.csv" : "false",
+  "config.encoding" : "UTF-8",
+  "config.email.suffix" : "@",
+  "config.field.mappings" : {
+    "duplicates" : {
+      "link.type" : "10002"
+    },
+    "assigned_to_id" : {
+      "jira.field" : "assignee"
+    },
+    "relates" : {
+      "link.type" : "10003"
+    },
+    "blocks" : {
+      "link.type" : "10000"
+    },
+    "type_id" : {
+      "jira.field" : "issuetype"
+    },
+    "subject" : {
+      "jira.field" : "summary"
+    },
+    "follows" : {
+      "link.type" : "10204"
+    },
+    "created_at" : {
+      "jira.field" : "created"
+    },
+    "description" : {
+      "jira.field" : "description"
+    },
+    "includes" : {
+      "link.type" : "10202"
+    },
+    "priority_id" : {
+      "jira.field" : "priority"
+    },
+    "status_id" : {
+      "jira.field" : "status"
+    },
+    "updated_at" : {
+      "jira.field" : "updated"
+    },
+    "parent_id" : {
+      "jira.field" : "subtask-parent-id"
+    },
+    "comment" : {
+      "jira.field" : "comment"
+    },
+    "id" : {
+      "jira.field" : "issue-id"
+    },
+    "adjust_version_text" : {
+      "jira.field" : "fixVersions"
+    },
+    "requires" : {
+      "link.type" : "10207"
+    },
+    "start_date" : {
+      "existing.custom.field" : "10101"
+    }
+  },
+  "config.value.mappings" : {
+    "priority_id" : {
+      "14" : "2",
+      "15" : "1",
+      "7" : "5",
+      "8" : "4",
+      "9" : "3",
+      "10" : "3"
+    },
+    "status_id" : {
+      "11" : "10001",
+      "12" : "10000",
+      "23" : "10001",
+      "13" : "10001",
+      "24" : "10001",
+      "25" : "10001",
+      "14" : "10001",
+      "26" : "10001",
+      "27" : "10000",
+      "16" : "10001",
+      "17" : "10001",
+      "18" : "10001",
+      "29" : "10001",
+      "1" : "10000",
+      "4" : "10001",
+      "6" : "10001",
+      "7" : "3",
+      "8" : "10001",
+      "9" : "10001",
+      "20" : "10001",
+      "21" : "10001"
+    },
+    "type_id" : {
+      "22" : "10021",
+      "11" : "10012",
+      "12" : "10013",
+      "23" : "10022",
+      "24" : "10023",
+      "13" : "10014",
+      "14" : "10015",
+      "15" : "10016",
+      "16" : "10017",
+      "17" : "10003",
+      "18" : "10018",
+      "19" : "10010",
+      "1" : "10002",
+      "2" : "10007",
+      "3" : "10008",
+      "4" : "10009",
+      "5" : "10000",
+      "6" : "10001",
+      "7" : "10004",
+      "8" : "10010",
+      "9" : "10011",
+      "20" : "10019",
+      "10" : "10001",
+      "21" : "10020"
+    }
+  },
+  "config.delimiter" : ",",
+  "config.project" : {
+    "project.type" : null,
+    "project.key" : "CMIS",
+    "project.description" : null,
+    "project.url" : null,
+    "project.name" : "CMIS",
+    "project.lead" : null
+  },
+  "config.date.format" : "dd/MMM/yy h:mm a",
+  "config.create.and.assign.default.project.role" : "false"
+}

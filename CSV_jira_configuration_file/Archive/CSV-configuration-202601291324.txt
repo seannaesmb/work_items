@@ -1,0 +1,302 @@
+{
+  "config.version" : "2.0",
+  "config.project.from.csv" : "false",
+  "config.encoding" : "UTF-8",
+  "config.email.suffix" : "@",
+  "config.field.mappings" : {
+    "status_resolved" : {
+      "jira.field" : "resolution"
+    },
+    "duplicates" : {
+      "link.type" : "10002"
+    },
+    "parent" : {
+      "jira.field" : "subtask-parent-id"
+    },
+    "relates" : {
+      "link.type" : "10003"
+    },
+    "blocks" : {
+      "link.type" : "10000"
+    },
+    "created" : {
+      "jira.field" : "created"
+    },
+    "subject" : {
+      "jira.field" : "summary"
+    },
+    "start" : {
+      "existing.custom.field" : "10218"
+    },
+    "follows" : {
+      "link.type" : "10204"
+    },
+    "description" : {
+      "jira.field" : "description"
+    },
+    "includes" : {
+      "link.type" : "10202"
+    },
+    "priority" : {
+      "jira.field" : "priority"
+    },
+    "type" : {
+      "jira.field" : "issuetype"
+    },
+    "version" : {
+      "jira.field" : "fixVersions"
+    },
+    "assigned" : {
+      "jira.field" : "assignee"
+    },
+    "comment" : {
+      "jira.field" : "comment"
+    },
+    "id" : {
+      "jira.field" : "issue-id"
+    },
+    "id_op_legacy" : {
+      "existing.custom.field" : "10501"
+    },
+    "updated" : {
+      "jira.field" : "updated"
+    },
+    "requires" : {
+      "link.type" : "10207"
+    },
+    "status" : {
+      "jira.field" : "status"
+    }
+  },
+  "config.value.mappings" : {
+    "status_resolved" : {
+      "23" : "<<blank>>",
+      "12" : "<<blank>>",
+      "13" : "<<blank>>",
+      "24" : "<<blank>>",
+      "25" : "<<blank>>",
+      "14" : "10101",
+      "26" : "<<blank>>",
+      "15" : "<<blank>>",
+      "27" : "10107",
+      "16" : "<<blank>>",
+      "17" : "<<blank>>",
+      "28" : "<<blank>>",
+      "29" : "10100",
+      "18" : "10107",
+      "19" : "<<blank>>",
+      "1" : "<<blank>>",
+      "2" : "<<blank>>",
+      "4" : "<<blank>>",
+      "6" : "<<blank>>",
+      "7" : "<<blank>>",
+      "8" : "<<blank>>",
+      "9" : "<<blank>>",
+      "20" : "<<blank>>",
+      "21" : "<<blank>>"
+    },
+    "type" : {
+      "22" : "10021",
+      "23" : "10022",
+      "24" : "10023",
+      "25" : "10020",
+      "10" : "10001",
+      "11" : "10012",
+      "12" : "10013",
+      "13" : "10014",
+      "14" : "10015",
+      "15" : "10016",
+      "16" : "10017",
+      "17" : "10003",
+      "18" : "10018",
+      "19" : "<<blank>>",
+      "1" : "10002",
+      "2" : "10007",
+      "3" : "10008",
+      "4" : "10009",
+      "5" : "10000",
+      "6" : "10501",
+      "7" : "10004",
+      "8" : "10112",
+      "9" : "10011",
+      "20" : "10019",
+      "21" : "10020"
+    },
+    "version" : {
+      "CMIS 2024 May" : "CMIS 2024 May",
+      "CMIS 2022 08-August-7.28.0.0" : "CMIS 2022 08-August-7.28.0.0",
+      "CMIS 2025-05 May" : "CMIS 2025-05 May",
+      "DDSO-2021-23" : "DDSO-2021-23",
+      "DDSO-2021-26" : "DDSO-2021-26",
+      "DDSO-2021-25" : "DDSO-2021-25",
+      "CMIS 2021 April-7.12.0.0" : "CMIS 2021 April-7.12.0.0",
+      "CMIS 2018 #11 - 5.10.4.8 Sept" : "CMIS 2018 #11 - 5.10.4.8 Sept",
+      "DDSO-2021-28" : "DDSO-2021-28",
+      "DDSO-2021-27" : "DDSO-2021-27",
+      "CMIS 2018 #01 - 5.10.3 Jan" : "CMIS 2018 #01 - 5.10.3 Jan",
+      "DDSO-2021-29" : "DDSO-2021-29",
+      "CMIS 2024 March" : "CMIS 2024 March",
+      "CMIS 2020 October -7.6.0.0" : "CMIS 2020 October -7.6.0.0",
+      "CMIS 2019 #06 June - 5.10.4.17" : "CMIS 2019 #06 June - 5.10.4.17",
+      "DDSO-2021-31" : "DDSO-2021-31",
+      "DDSO-2022-01" : "DDSO-2022-01",
+      "DDSO-2021-30" : "DDSO-2021-30",
+      "DDSO-2021-33" : "DDSO-2021-33",
+      "DDSO-2021-32" : "DDSO-2021-32",
+      "CMIS 2018 #05 - 5.10.4.2.1" : "CMIS 2018 #05 - 5.10.4.2.1",
+      "CMIS 2022 12-December-7.32.0.0" : "CMIS 2022 12-December-7.32.0.0",
+      "CMIS 2022 01-January-7.21.0.0" : "CMIS 2022 01-January-7.21.0.0",
+      "CMIS 2020 August-7.4.0.0" : "CMIS 2020 August-7.4.0.0",
+      "CMIS 2020 June-7.2.0.0" : "CMIS 2020 June-7.2.0.0",
+      "CMIS 2018 #10 - 5.10.4.7 Aug" : "CMIS 2018 #10 - 5.10.4.7 Aug",
+      "CMIS 2023 February" : "CMIS 2023 February",
+      "CMIS 2020 September-7.5.0.0" : "CMIS 2020 September-7.5.0.0",
+      "CMIS 2019 #02 - 5.10.5.2 Feb" : "CMIS 2019 #02 - 5.10.5.2 Feb",
+      "CMIS 2018 #06 - 5.10.4.3 April" : "CMIS 2018 #06 - 5.10.4.3 April",
+      "CMIS 2024 April" : "CMIS 2024 April",
+      "CMIS 2024 February" : "CMIS 2024 February",
+      "CMIS 2018 #12 - 5.10.4.9 Oct" : "CMIS 2018 #12 - 5.10.4.9 Oct",
+      "CMIS 2024 November" : "CMIS 2024 November",
+      "CMIS 2023 September" : "CMIS 2023 September",
+      "CMIS 2022 05-May-7.25.0.0" : "CMIS 2022 05-May-7.25.0.0",
+      "CMIS 2022 07-July-7.27.0.0" : "CMIS 2022 07-July-7.27.0.0",
+      "CMIS 2021 June-7.14.0.0" : "CMIS 2021 June-7.14.0.0",
+      "CMIS 2023 June" : "CMIS 2023 June",
+      "CMIS 2023 July" : "CMIS 2023 July",
+      "CMIS 2020 Feb 02-6.2.0.0" : "CMIS 2020 Feb 02-6.2.0.0",
+      "CMIS 2024 December" : "CMIS 2024 December",
+      "DDSO-2021-46" : "DDSO-2021-46",
+      "CMIS 2018 #13 - 5.10.4.10 Nov" : "CMIS 2018 #13 - 5.10.4.10 Nov",
+      "CMIS 2021 September-7.17.0.0" : "CMIS 2021 September-7.17.0.0",
+      "DDSO-2021-45" : "DDSO-2021-45",
+      "DDSO-2022-13" : "DDSO-2022-13",
+      "CMIS 2021 November-7.19.0.0" : "CMIS 2021 November-7.19.0.0",
+      "DDSO-2021-47" : "DDSO-2021-47",
+      "DDSO-2022-17" : "DDSO-2022-17",
+      "CMIS 2023 November" : "CMIS 2023 November",
+      "CMIS 2023 August" : "CMIS 2023 August",
+      "CMIS 2024 September" : "CMIS 2024 September",
+      "DDSO-2021-51" : "DDSO-2021-51",
+      "DDSO-2021-53" : "DDSO-2021-53",
+      "DDSO-2022-20" : "DDSO-2022-20",
+      "DDSO-2022-21" : "DDSO-2022-21",
+      "CMIS  2022 10-October-7.30.0.0" : "CMIS  2022 10-October-7.30.0.0",
+      "CMIS 2023 October" : "CMIS 2023 October",
+      "DP Sprint 1" : "DP Sprint 1",
+      "CMIS 2022 11-November-7.31.0.0" : "CMIS 2022 11-November-7.31.0.0",
+      "CMIS 2025-04 April" : "CMIS 2025-04 April",
+      "DDSO-2021-35" : "DDSO-2021-35",
+      "DDSO-2022-04" : "DDSO-2022-04",
+      "DDSO-2021-34" : "DDSO-2021-34",
+      "DDSO-2021-37" : "DDSO-2021-37",
+      "DDSO-2021-36" : "DDSO-2021-36",
+      "DDSO-2021-39" : "DDSO-2021-39",
+      "DDSO-2022-08" : "DDSO-2022-08",
+      "CMIS 2019 #07 July - 5.10.4.18" : "CMIS 2019 #07 July - 5.10.4.18",
+      "DDSO-2021-38" : "DDSO-2021-38",
+      "DDSO-2022-09" : "DDSO-2022-09",
+      "CMIS 2021 December-7.20.0.0" : "CMIS 2021 December-7.20.0.0",
+      "DDSO-2022-06" : "DDSO-2022-06",
+      "CMIS 2020 December -7.8.0.0" : "CMIS 2020 December -7.8.0.0",
+      "DDSO-2021-40" : "DDSO-2021-40",
+      "CMIS 2018 #08 - 5.10.4.5 June" : "CMIS 2018 #08 - 5.10.4.5 June",
+      "DDSO-2021-42" : "DDSO-2021-42",
+      "DDSO-2022-11" : "DDSO-2022-11",
+      "DDSO-2021-41" : "DDSO-2021-41",
+      "DDSO-2022-12" : "DDSO-2022-12",
+      "DDSO-2021-44" : "DDSO-2021-44",
+      "DDSO-2022-10" : "DDSO-2022-10",
+      "DDSO-2021-43" : "DDSO-2021-43",
+      "CMIS 2018 #04 - 5.10.4.2 March" : "CMIS 2018 #04 - 5.10.4.2 March",
+      "CMIS 2023 April" : "CMIS 2023 April",
+      "CMIS 2025-01 January" : "CMIS 2025-01 January",
+      "CMIS 2022 03-March-7.23.0.0" : "CMIS 2022 03-March-7.23.0.0",
+      "CMIS 2023 January" : "CMIS 2023 January",
+      "CMIS 2021 May-7.13.0.0" : "CMIS 2021 May-7.13.0.0",
+      "CMIS 2023 May" : "CMIS 2023 May",
+      "CMIS 2021 July-7.15.0.0" : "CMIS 2021 July-7.15.0.0",
+      "CMIS 2019 Dec 02-5.10.4.24" : "CMIS 2019 Dec 02-5.10.4.24",
+      "CMIS 2024 October" : "CMIS 2024 October",
+      "CMIS 2018 #02 - 5.10.4 Feb" : "CMIS 2018 #02 - 5.10.4 Feb",
+      "CMIS 2021 October-7.18.0.0" : "CMIS 2021 October-7.18.0.0",
+      "CMIS 2025-03 March" : "CMIS 2025-03 March",
+      "test" : "test",
+      "CMIS 2022 09-September-7.29.0.0" : "CMIS 2022 09-September-7.29.0.0",
+      "DDSO-2022-24" : "DDSO-2022-24",
+      "DDSO-2022-25" : "DDSO-2022-25",
+      "CMIS 2022 04-April-7.24.0.0" : "CMIS 2022 04-April-7.24.0.0",
+      "CMIS 2018 #09 - 5.10.4.6 July" : "CMIS 2018 #09 - 5.10.4.6 July",
+      "CMIS 2019 #04 Apr - 5.10.4.15" : "CMIS 2019 #04 Apr - 5.10.4.15",
+      "CMIS 2021 January -7.9.0.0" : "CMIS 2021 January -7.9.0.0",
+      "CMIS 2025-07 July" : "CMIS 2025-07 July",
+      "CMIS 2019 #08 Aug - 5.10.4.19" : "CMIS 2019 #08 Aug - 5.10.4.19",
+      "CMIS 2018 #07 - 5.10.4.4 May" : "CMIS 2018 #07 - 5.10.4.4 May",
+      "CMIS 2021 March-7.11.0.0" : "CMIS 2021 March-7.11.0.0",
+      "CMIS 2019 #05 May- 5.10.4.16" : "CMIS 2019 #05 May- 5.10.4.16",
+      "CMIS 2024 January" : "CMIS 2024 January",
+      "CMIS 2022 06-June-7.26.0.0" : "CMIS 2022 06-June-7.26.0.0",
+      "CMIS 2020 May-7.1.0.0" : "CMIS 2020 May-7.1.0.0",
+      "CMIS 2024 August" : "CMIS 2024 August",
+      "CMIS 2020 Apr-6.4.0.0" : "CMIS 2020 Apr-6.4.0.0",
+      "CMIS 2024 June" : "CMIS 2024 June",
+      "CMIS 2020 November -7.7.0.0" : "CMIS 2020 November -7.7.0.0",
+      "CMIS 2020 Jan 02-5.10.4.25" : "CMIS 2020 Jan 02-5.10.4.25",
+      "CMIS 2019 Nov 02-5.10.4.23" : "CMIS 2019 Nov 02-5.10.4.23",
+      "CMIS 2020 July-7.3.0.0" : "CMIS 2020 July-7.3.0.0",
+      "CMIS 2019 #03 - 5.10.5.3 March" : "CMIS 2019 #03 - 5.10.5.3 March",
+      "CMIS 2025-02 February" : "CMIS 2025-02 February",
+      "CMIS 2019 Sep 02-5.10.4.20" : "CMIS 2019 Sep 02-5.10.4.20",
+      "CMIS 2023 December" : "CMIS 2023 December",
+      "CMIS 2021 August-7.16.0.0" : "CMIS 2021 August-7.16.0.0",
+      "CMIS 2024 July" : "CMIS 2024 July",
+      "CMIS 2025-06 June" : "CMIS 2025-06 June",
+      "CMIS 2018 #14 - 5.10.4.11 Dec" : "CMIS 2018 #14 - 5.10.4.11 Dec",
+      "CMIS 2018 #03 - 5.10.4.1" : "CMIS 2018 #03 - 5.10.4.1",
+      "CMIS 2017 #12" : "CMIS 2017 #12",
+      "CMIS 2022 02-February-7.22.0.0" : "CMIS 2022 02-February-7.22.0.0",
+      "CMIS 2020 Mar-6.3.0.0" : "CMIS 2020 Mar-6.3.0.0",
+      "CMIS 2019 #01 - 5.10.4.12 Jan" : "CMIS 2019 #01 - 5.10.4.12 Jan",
+      "CMIS 2023 March" : "CMIS 2023 March",
+      "CMIS 2021 February-7.10.0.0" : "CMIS 2021 February-7.10.0.0",
+      "CMIS 2019 Oct 02-5.10.4.22" : "CMIS 2019 Oct 02-5.10.4.22"
+    },
+    "status" : {
+      "23" : "10103",
+      "24" : "10102",
+      "25" : "10102",
+      "26" : "10102",
+      "27" : "10212",
+      "28" : "10213",
+      "29" : "10214",
+      "11" : "10206",
+      "12" : "6",
+      "13" : "10103",
+      "14" : "10106",
+      "15" : "10103",
+      "16" : "10207",
+      "17" : "10102",
+      "18" : "10212",
+      "19" : "3",
+      "1" : "1",
+      "2" : "10213",
+      "4" : "10102",
+      "6" : "3",
+      "7" : "3",
+      "8" : "3",
+      "9" : "10102",
+      "20" : "10102",
+      "21" : "10108"
+    }
+  },
+  "config.delimiter" : ",",
+  "config.project" : {
+    "project.type" : null,
+    "project.key" : "CMIS",
+    "project.description" : null,
+    "project.url" : null,
+    "project.name" : "Corporate Management Information System",
+    "project.lead" : null
+  },
+  "config.date.format" : "dd/MMM/yy h:mm a",
+  "config.create.and.assign.default.project.role" : "false"
+}
