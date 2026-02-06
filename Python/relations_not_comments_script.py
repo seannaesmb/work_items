@@ -7,9 +7,9 @@ now = datetime.now()
 formatted_date = now.strftime("%Y-%m-%d-%H-%M")
 print(f"Formatted Date: {formatted_date}")
 # Load workbook and worksheets
-wb = openpyxl.load_workbook("C:\\projects\\sbrown\\Python\\temp_exports_for_db\\fullworkbook_second_attempt.xlsx")
-master_ws = wb["Sheet1"]
-control_ws = wb["relations_202601280944_non_asci"]
+wb = openpyxl.load_workbook(r"C:\projects\sbrown\Python\db_file_exports\output_csv_with_additional_columns\Book3.xlsx")
+master_ws = wb["work_packages_202602052105"]
+control_ws = wb["relations_202602052108"]
 
 
 # Step 1: Map headers in Master to all column indexes where they appear
@@ -66,7 +66,7 @@ while True:
     row += 1
 
 # Save workbook
-wb.save("C:\\projects\\sbrown\\Python\\temp_exports_for_db\\second_updated_workbook-relations.xlsx")
+wb.save(r"C:\projects\sbrown\Python\db_file_exports\output_csv_with_additional_columns\second_updated_workbook.xlsx")
 print("✅ Master sheet updated and saved as 'second_updated_workbook.xlsx'")
 now = datetime.now()
 formatted_date = now.strftime("%Y-%m-%d-%H-%M")

@@ -1,10 +1,14 @@
+import sys
 import pandas as pd
 
 
 
 # --- Configuration ---
-input_file = "C:\\projects\\sbrown\\Python\\temp_exports_for_db\\work_packages_202601280944_non_ascii.csv"
-output_file = "C:\\projects\\sbrown\\Python\\temp_exports_for_db\\work_packages_202601280944_non_with_additional_columns.csv"
+# input_file = "C:\\projects\\sbrown\\Python\\temp_exports_for_db\\work_packages_202601280944_non_ascii.csv"
+# output_file = "C:\\projects\\sbrown\\Python\\temp_exports_for_db\\work_packages_202601280944_non_with_additional_columns.csv"
+
+input_file = sys.argv[1]
+output_file = sys.argv[2]
 
 headings = ["includes", "blocks", "relates", "duplicates", "follows", "requires", "comment"]
 repeat_count = 250
