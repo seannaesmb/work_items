@@ -263,6 +263,8 @@ fortify_scan_merge_request:
     - sourceanalyzer -b srcbuild -clean
     - sourceanalyzer -verbose -b srcbuild @changed_files.txt
     - sourceanalyzer -b srcbuild -scan -f $CI_MERGE_REQUEST_ID.fpr
+    - fortifyclient -debug -url $FORTIFY_URL -authtoken $FORTIFY_TOKEN uploadFPR -file $CI_MERGE_REQUEST_ID.fpr -application $PROJECT -applicationVersion $CI_MERGE_REQUEST_ID
+
     - |
       FPRUtility -Xmx2G -project $CI_MERGE_REQUEST_ID.fpr -information  -search -query "[fortify priority order]:critical"
       # BIRTReportGenerator -format html -template "CWE/SANS Top 25" -output fortify_report.html -source $CI_MERGE_REQUEST_ID.fpr
@@ -279,7 +281,67 @@ fortify_scan_merge_request:
 
     - echo $CI_MERGE_REQUEST_IID $CI_MERGE_REQUEST_ID
     # - fortifyclient -debug -url $FORTIFY_URL -authtoken $FORTIFY_TOKEN uploadFPR -file $CI_MERGE_REQUEST_ID.fpr -application $PROJECT -applicationVersion $CI_MERGE_REQUEST_ID
+    - |
+      # FILE_CONTENT="$(cat $CI_MERGE_REQUEST_ID.fpr)" 
+      # # FILE_CONTENT="HI CHECKING"
+      # id_creation=$(cat version_create.json | jq -c '.data?.id' )
+      ID=$(cat app.json | grep -oP '"id":\s*\K[0-9]+'| head -n1)
+            echo $ID
 
+        # Create a temporary file to hold the message
+        TEMP_FILE=$(mktemp)
+
+        # Write the message line by line
+        {
+          echo "### Fortify Scan Results"
+          echo ""
+          echo "Fortify URL: https://fortify.c2sf.mil/html/ssc/version/$ID"
+          echo ""
+          echo "HIGH issues found:"
+          FPR_HIGH=$(FPRUtility -Xmx2G -project "$CI_MERGE_REQUEST_ID.fpr" -information -search -query "[fortify priority order]:HIGH")
+          echo "\`\`\`"
+          echo "$FPR_HIGH"
+          echo "\`\`\`"
+          echo ""
+          echo "CRITICAL issues found:"
+          FPR_CRITICAL=$(FPRUtility -Xmx2G -project "$CI_MERGE_REQUEST_ID.fpr" -information -search -query "[fortify priority order]:CRITICAL")
+          echo "\`\`\`"
+          echo "$FPR_CRITICAL"
+          echo "\`\`\`"
+        } > "$TEMP_FILE"
+
+          # # Post the comment using Project Access Token
+          # curl --fail --request POST \
+          #   --header "PRIVATE-TOKEN: $GITLABPOST" \
+          #   --data-urlencode "body@$TEMP_FILE" \
+          #   "$CI_API_V4_URL/projects/$CI_MERGE_REQUEST_TARGET_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
+
+
+
+
+
+      # MESSAGE="### 📄 Report Output
+
+      #   \`\`\`
+
+      #   Fortify URL https://fortify.c2sf.mil/html/ssc/version/$CI_MERGE_REQUEST_ID
+      #   "HIGH issues found"
+      #   "$(FPRUtility -Xmx2G -project $CI_MERGE_REQUEST_ID.fpr -information  -search -query "[fortify priority order]:HIGH")"
+      #   "CRITICAL issues found"
+      #   "$(FPRUtility -Xmx2G -project $CI_MERGE_REQUEST_ID.fpr -information  -search -query "[fortify priority order]:CRITICAL")"
+      #   \`\`\`
+      #   "
+    - |
+      echo "Testing job token..."
+      echo "CI_PROJECT_ID=$CI_PROJECT_ID"
+      echo "CI_PROJECT_PATH=$CI_PROJECT_PATH"
+
+              curl --request POST \
+                --header "PRIVATE-TOKEN: $GITLABPOST" \
+                --data-urlencode body@"$TEMP_FILE" \
+                "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
+      # Clean up
+      rm -f "$TEMP_FILE"
   rules:
     - if: $CI_MERGE_REQUEST_ID
   artifacts:
