@@ -1,0 +1,1 @@
+SELECT id, journable_type, journable_id, user_id, notes, created_at, "version", updated_at, data_type, data_id, hibernate_version, cause, validity_period FROM journals where notes != '' and notes !~ '^changed field'
