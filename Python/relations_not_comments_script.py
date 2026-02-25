@@ -7,7 +7,7 @@ now = datetime.now()
 formatted_date = now.strftime("%Y-%m-%d-%H-%M")
 print(f"Formatted Date: {formatted_date}")
 # Load workbook and worksheets
-wb = openpyxl.load_workbook(r"C:\projects\sbrown\Python\db_file_exports\output_csv_with_additional_columns\Book3.xlsx")
+wb = openpyxl.load_workbook(r"C:\projects\sbrown\Python\db_file_exports\output_csv_with_additional_columns\master_workbook_with_columns.xlsx")
 master_ws = wb["work_packages_202602052105"]
 control_ws = wb["relations_202602052108"]
 
@@ -66,8 +66,8 @@ while True:
     row += 1
 
 # Save workbook
-wb.save(r"C:\projects\sbrown\Python\db_file_exports\output_csv_with_additional_columns\second_updated_workbook.xlsx")
-print("✅ Master sheet updated and saved as 'second_updated_workbook.xlsx'")
+wb.save(r"C:\projects\sbrown\Python\db_file_exports\output_csv_with_additional_columns\master_workbook_with_columns_with_relations.xlsx")
+print("✅ Master sheet updated and saved as 'master_workbook_with_columns_with_relations.xlsx'")
 now = datetime.now()
 formatted_date = now.strftime("%Y-%m-%d-%H-%M")
 print(f"Formatted Date: {formatted_date}")

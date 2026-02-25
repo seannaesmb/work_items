@@ -27,9 +27,9 @@ now = datetime.now()
 formatted_date = now.strftime("%Y-%m-%d-%H-%M")
 print(f"Formatted Date: {formatted_date}")
 # Load workbook and worksheets
-wb = openpyxl.load_workbook(r"C:\projects\sbrown\Python\db_file_exports\output_csv_with_additional_columns\second_updated_workbook-relations.xlsx")
+wb = openpyxl.load_workbook(r"C:\projects\sbrown\Python\db_file_exports\output_csv_with_additional_columns\master_workbook_with_columns_with_relations.xlsx")
 master_ws = wb["work_packages_202602052105"]
-control_ws = wb["journals_202602052106"]
+control_ws = wb["journals_202602052106_jira_comp"]
 
 # Step 1: Map Master column headers (Row 1) to all matching columns
 header_map = defaultdict(list)
@@ -80,8 +80,8 @@ for row in range(2, control_ws.max_row + 1):
             print(f"⚠️ Column header '{col_header_str}' not found in Master sheet")
 
 # Save workbook
-wb.save(r"C:\projects\sbrown\Python\db_file_exports\output_csv_with_additional_columns\second_updated_workbook-relations-comments.xlsx")
-print("✅ Done. Saved as 'second_updated_workbook-relations-comments.xlsx'")
+wb.save(r"C:\projects\sbrown\Python\db_file_exports\output_csv_with_additional_columns\master_workbook_with_columns_with_relations_with_comments.xlsx")
+print("✅ Done. Saved as 'master_workbook_with_columns_with_relations_with_comments.xlsx'")
 now = datetime.now()
 formatted_date = now.strftime("%Y-%m-%d-%H-%M")
 print(f"Formatted Date: {formatted_date}")
