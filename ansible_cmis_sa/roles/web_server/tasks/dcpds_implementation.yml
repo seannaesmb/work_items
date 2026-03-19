@@ -1,0 +1,49 @@
+- name: user_user_creation
+  ansible.builtin.user:
+    name: "{{ user_user }}"
+    #    uid: 1005
+
+- name: user_sftp_umask
+  ansible.builtin.lineinfile:
+    path: "{{ user_centrify_sftp_file }}"
+    backup: true
+    regexp: '(?i)^\s*Subsystem sftp\s+'
+    line: "{{ user_umask_entry }}"
+  register: web_server_centrify_restart
+
+- name: Transfer_directory_creation
+  ansible.builtin.file:
+    path: "/home/{{ user_user }}/transfer"
+    group: "tomcat"
+    mode: "0750"
+    owner: "{{ user_user }}"
+    state: directory
+    recurse: true
+
+- name: Set-guid_bit_transfer
+  ansible.builtin.file:
+    path: "/home/{{ user_user }}/transfer"
+    mode: "02750"
+    state: directory
+
+- name: script_import_script_copy
+  ansible.builtin.copy:
+    checksum: f9b52752a9631f97db785e578f474ac176a99a10
+    dest: "/home/{{ user_user }}/"
+    group: "{{ user_user }}"
+    mode: "0750"
+    owner: "{{ user_user }}"
+    src: files/script_import.sh
+
+- name: Cron_job_setup
+  ansible.builtin.cron:
+    name: "script_import"
+    special_time: "hourly"
+    job: "/bin/bash script_import.sh > ~/script_import.log 2>&1"
+    user: "{{ user_user }}"
+
+- name: Centrify_restart_sshd
+  ansible.builtin.service:
+    name: centrify-sshd.service
+    state: restarted
+  when: web_server_centrify_restart.changed

@@ -1,0 +1,18 @@
+- name: Gather the package facts
+  ansible.builtin.package_facts:
+
+  vars:
+    CATALINA_BASE: /usr/share/tomcat
+
+# - name: install_tomcat_noarch
+#   ansible.builtin.dnf:
+#     name: tomcat.noarch
+#     state: present
+#   register: tomcat_installed
+
+- name: SV-222926r615938
+  ansible.builtin.shell:
+    cmd: "{{ tomcat_stigrule_222926 }}"
+  register: stig_rule_reuslt
+  ignore_errors: true
+  when: "'tomcat' in ansible_facts.packages"

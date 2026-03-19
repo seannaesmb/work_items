@@ -1,0 +1,49 @@
+---
+
+- name: Check common Cygwin bash paths
+  win_stat:
+    path: "{{ item }}"
+  loop: "{{ bash_paths }}"
+  register: bash_check
+
+- name: Set bash_path fact if found
+  set_fact:
+    bash_path: "{{ (bash_check.results | selectattr('stat.exists') | map(attribute='item') | list | first) | default('', true) }}"
+
+- name: Run Cygwin ps if bash available
+  win_shell: '"{{ bash_path }}" -lc "ps -ef"'
+  register: cyg_ps
+  failed_when: false
+  changed_when: false
+  when: bash_path != ''
+
+- name: Show Cygwin ps output (if any)
+  debug:
+    msg: "Cygwin ps output found: {{ cyg_ps.stdout_lines | default([]) }}"
+  when: cyg_ps is defined and cyg_ps.stdout is defined and cyg_ps.stdout | trim != ''
+
+- name: Fallback - use PowerShell Get-Process (JSON)
+  win_powershell:
+    script: |
+      Get-Process | Select-Object Name,Id,CPU,WS | ConvertTo-Json -Depth 3
+  register: ps_json
+  failed_when: false
+  changed_when: false
+  when: cyg_ps is not defined or cyg_ps.stdout is not defined or cyg_ps.stdout | trim == ''
+
+- name: Show PowerShell Get-Process output
+  debug:
+    var: ps_json.stdout | from_json
+  when: ps_json is defined and ps_json.stdout is defined and ps_json.stdout | trim != ''
+
+- name: Fallback - use tasklist (CSV) if PowerShell not available
+  win_shell: tasklist /V /FO CSV
+  register: tasklist_csv
+  failed_when: false
+  changed_when: false
+  when: (ps_json is not defined or ps_json.stdout | default('') | trim == '') and (cyg_ps is not defined or cyg_ps.stdout | default('') | trim == '')
+
+- name: Show tasklist CSV lines (first 20)
+  debug:
+    msg: "{{ tasklist_csv.stdout_lines | default([])[:20] }}"
+  when: tasklist_csv is defined and tasklist_csv.stdout is defined and tasklist_csv.stdout | trim != ''

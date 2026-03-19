@@ -1,0 +1,50 @@
+- name: Gather the package facts
+  ansible.builtin.package_facts:
+
+- name: install_tomcat_noarch
+  ansible.builtin.dnf:
+    name: tomcat.noarch
+    state: present
+  register: tomcat_installed
+
+# - name: find_tomcat_rpm
+#   ansible.builtin.find:
+#     paths: /root
+#     file_type: file
+#     patterns: '*tomcat-package'
+
+- name: extract_latest_tomcat_rpm
+  ansible.builtin.unarchive:
+    creates: /opt/inst/tomcat
+    dest: "{{ opt_inst_dir }}"
+    mode: "0740"
+    owner: root
+    src: files/tomcat-package_rpm.tgz
+  register: tomcat_latest_extract
+  when: tomcat_installed.rc == 0
+
+- name: upgrade_tomcat_latest
+  ansible.builtin.dnf:
+    name: "{{ opt_inst_dir }}/tomcat/*rpm"
+    state: latest
+    update_only: true
+
+- name: tomcat_conf_javaopts
+  ansible.builtin.lineinfile:
+    path: "{{ tomcat_conf_file }}"
+    backup: true
+    #regexp: '(?i)^\sJAVA_OPTS\s+'
+    line: "{{ tomcat_java_opt_value }} {{ heap_max }} {{ tomcat_java_opt_params }}"
+    state: present
+    search_string: "JAVA_OPTS"
+    #when: "{{ ansible_facts.pacakge['tomcat'] ==
+  when: "'tomcat' in ansible_facts.packages"
+
+- name: jdbc_mssql_jar
+  ansible.builtin.copy:
+    checksum: 5903e617b8f7c57ee79c760a7d479cca62f534b6
+    dest: "{{ tomcat_lib_dir }}"
+    group: "{{ dcpds_user }}"
+    mode: "0744"
+    owner: "{{ dcpds_user }}"
+    src: files/mssql-jdbc-9.4.0.jre11.jar

@@ -1,0 +1,25 @@
+- name: Gex_user_creation
+  ansible.builtin.user:
+    name: "{{ _user }}"
+    #    uid: 1005
+
+- name: _user_directory_creation
+  ansible.builtin.file:
+    path: "/home/{{ _user }}/"
+    group: "tomcat"
+    mode: "0760"
+    owner: "{{ _user }}"
+    state: directory
+    recurse: true
+
+- name: Set-guid_bit_transfer
+  ansible.builtin.command: chmod g+s /home/{{ _user }}/
+
+- name: _user_archive_directory_creation
+  ansible.builtin.file:
+    path: "/home/{{ _user }}/_user/archive"
+    group: "tomcat"
+    mode: "0760"
+    owner: "{{ _user }}"
+    state: directory
+    recurse: true

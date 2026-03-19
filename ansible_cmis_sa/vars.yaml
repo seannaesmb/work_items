@@ -1,0 +1,6 @@
+# vars.yaml
+
+rhel8STIG_stigrule_230526_Manage: false # service_sshd_enabled
+rhel8STIG_stigrule_244549_Manage: false # package_openssh-server_installed
+rhel8STIG_stigrule_230559_Manage: false # package_gssproxy_removed
+$CATALINA_BASE: "/usr/share/tomcat"

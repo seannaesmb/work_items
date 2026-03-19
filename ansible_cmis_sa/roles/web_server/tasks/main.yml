@@ -1,0 +1,34 @@
+---
+- name: Create /opt/inst folder for all usages
+  ansible.builtin.file:
+    state: directory
+    path: /opt/inst/
+    #mode: "0755"
+
+- name: DCPDS implementation
+  ansible.builtin.include_tasks:
+    file: dcpds_implementation.yml
+  tags: dcpds_implementation
+  when: task == 'dcpds'
+
+- name: Gex implementation
+  ansible.builtin.include_tasks:
+    file: gex_implementation.yml
+  tags: gex_implementation
+  when: task == 'gex'
+
+- name: Tomcat WebApp implementation
+  ansible.builtin.include_tasks:
+    file: tomcat_webapp_setup.yml
+  tags: webapp
+  when: task == 'tomcat'
+
+- name: HTTPD stig check
+  ansible.builtin.include_tasks:
+    file: httpd_stig_implementation.yml
+  when: task == 'httpd_stig'
+
+- name: TOMCAT stig check
+  ansible.builtin.include_tasks:
+    file: tomcat_stig_check.yml
+  when: task == 'tomcat_stig'

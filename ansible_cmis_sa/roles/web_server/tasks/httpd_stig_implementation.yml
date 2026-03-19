@@ -1,0 +1,6 @@
+- name: Run command using argv with mixed argument formats
+  ansible.builtin.command:
+    argv:
+      - /usr/sbin/httpd
+      - -M
+  register: httpd_modules
