@@ -1,0 +1,75 @@
+pipeline {
+    agent {
+  label '<project>'
+}
+
+    stages {
+        stage('GERRIT_GENERATED_DEV_BRANCH') {
+            steps {
+                echo "Going into stratus_<project>_branches"
+                dir ('stratus_<project>_branches') {
+                git branch: 'gerrit-generated-dev',credentialsId: 'C2SF-jenkins-ssh-<dev_instance>', url: 'ssh://svc_jenkins_d$@<dev_instance>.domain.name:/mnt/local/repo/<project>'            
+                    withCredentials([string(credentialsId: 'project-access-token-text', variable: 'CRED')]) {
+               // withCredentials([usernamePassword(credentialsId: 'jenkins_<project>', passwordVariable: 'PW', usernameVariable: 'CRED')]) {
+
+                    script{
+                        sh '''
+                            echo $CRED
+                            git push https://gitlab-ci-token:"$CRED"@gitlab.c2sf.mil/<project>/<project>.git --all --force
+                            '''
+                            }
+                        }
+                    }
+                }
+            }
+        
+       stage('DEVELOPMENT_BRANCH') {
+            steps {
+                echo "Going into stratus_<project>_branches"
+                dir ('stratus_<project>_branches') {
+                git branch: 'development',credentialsId: 'C2SF-jenkins-ssh-<dev_instance>', url: 'ssh://svc_jenkins_t$@utincsmc7i.domain.name:/mnt/local/repo/<project>'            
+
+                    withCredentials([string(credentialsId: 'project-access-token-text', variable: 'CRED')]) {
+               // withCredentials([usernamePassword(credentialsId: 'jenkins_<project>', passwordVariable: 'PW', usernameVariable: 'CRED')]) {
+
+                    script{
+                        sh '''
+                            echo $CRED
+                            git push https://gitlab-ci-token:"$CRED"@gitlab.c2sf.mil/<project>/<project>.git --all --force
+                            '''
+                            }
+                        }
+                    }
+                }
+            }
+        
+       stage('PRODUCITON_BRANCH') {
+            steps {
+                echo "Going into stratus_<project>_branches"
+                dir ('stratus_<project>_branches') {
+                git branch: 'production',credentialsId: 'C2SF-jenkins-ssh-<dev_instance>', url: 'ssh://svc_jenkins_p$@<prod>.domain.name:/mnt/local/repo/<project>'            
+                
+                    withCredentials([string(credentialsId: 'project-access-token-text', variable: 'CRED')]) {
+               // withCredentials([usernamePassword(credentialsId: 'jenkins_<project>', passwordVariable: 'PW', usernameVariable: 'CRED')]) {
+
+                    script{
+                        sh '''
+                            echo $CRED
+                            git push https://gitlab-ci-token:"$CRED"@gitlab.c2sf.mil/<project>/<project>.git --all --force
+                            '''
+                            }
+                        }
+                    }
+                }
+            }
+    }
+        post {
+            always {
+                emailext(
+                subject: "${currentBuild.currentResult}: ${env.JOB_NAME} ${env.BUILD_NUMBER}",
+                to: "<email-to-address>",
+                body: "${env.BUILD_URL}"
+                )
+            }
+        }
+    }
