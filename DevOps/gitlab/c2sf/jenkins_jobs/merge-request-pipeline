@@ -1,0 +1,73 @@
+pipeline {
+    agent {
+        label 'cmis'
+    }
+          environment {
+            DEV_REMOTE = 'cmis_dev_7e'
+            TEST_REMOTE = 'cmis_test_7i'
+            DEV_REMOTE_URL = 'ssh://svc_jenkins_d$@utincsmc7e.cloud.disa.mil:/mnt/local/repo/cmis'  // Replace
+            TEST_REMOTE_URL = 'ssh://svc_jenkins_d$@utincsmc7i.cloud.disa.mil:/mnt/local/repo/cmis'  // Replace
+            GIT_CREDENTIALS_ID = 'C2SF-jenkins-ssh-utincsmc7e'
+        }
+
+
+    stages {
+        stage('Checkout the code') {
+            steps {
+                // echo ${env.gitlabSourceBranch}
+                git branch: "${env.gitlabSourceBranch}", credentialsId: 'jenkins_cmis_token', url: "${env.gitlabSourceRepoHttpUrl}"
+            }
+        }
+    
+        stage('Push gerrit-generated-dev Branch') {
+            when {
+                allOf {
+                    // expression { env.gitlabAction == 'close' || env.gitlabAction == 'merge' }
+                    // expression { env.gitlabSourceBranch == 'gerrit-generated-dev' }
+                    expression { env.gitlabSourceBranch == 'sample-clone-dev-testing' }
+
+                }
+            }
+                     steps {
+                            script {
+                                sh 'ls -la .; pwd'
+                                // sh "git remote add ${DEV_REMOTE} ${DEV_REMOTE_URL} || true"
+                                // sh "git fetch origin ${env.gitlabSourceBranch} || true"
+                                // sh "git push ${DEV_REMOTE} ${env.gitlabSourceBranch}.checkout"
+                                // echo "Pushed ${env.gitlabSourceBranch} to ${DEV_REMOTE}"
+                            }
+                        }
+                    }
+
+        
+     stage('Push Development Branch') {
+            when {
+                allOf {
+                    expression { env.gitlabAction == 'close' || env.gitlabAction == 'merge' }
+                    expression { env.gitlabSourceBranch == 'development' }
+                }
+            }
+                     steps {
+                            script {
+                                ls -l
+                                // sh "git remote add ${DEV_REMOTE} ${DEV_REMOTE_URL} || true"
+                                // sh "git fetch origin ${env.gitlabSourceBranch} || true"
+                                // sh "git push ${DEV_REMOTE} ${env.gitlabSourceBranch}.checkout"
+                                // echo "Pushed ${env.gitlabSourceBranch} to ${DEV_REMOTE}"
+                            }
+                        }
+                    }
+                }
+        post {
+            success { echo "Push completed" }
+            failure { echo "Push failed" }
+            always {
+                emailext(
+                subject: "${currentBuild.currentResult}: ${env.JOB_NAME} ${env.BUILD_NUMBER}",
+                to: "sean.m.brown92.ctr@mail.mil",
+                body: "${env.BUILD_URL}"
+                )
+            }
+        }
+    }
+
