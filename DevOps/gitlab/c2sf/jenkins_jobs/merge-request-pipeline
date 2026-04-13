@@ -50,10 +50,10 @@ pipeline {
                      steps {
                             script {
                                 ls -l
-                                // sh "git remote add ${DEV_REMOTE} ${DEV_REMOTE_URL} || true"
+                                // sh "git remote add ${TEST_REMOTE} ${TEST_REMOTE_URL} || true"
                                 // sh "git fetch origin ${env.gitlabSourceBranch} || true"
-                                // sh "git push ${DEV_REMOTE} ${env.gitlabSourceBranch}.checkout"
-                                // echo "Pushed ${env.gitlabSourceBranch} to ${DEV_REMOTE}"
+                                // sh "git push ${TEST_REMOTE} ${env.gitlabSourceBranch}.checkout"
+                                // echo "Pushed ${env.gitlabSourceBranch} to ${TEST_REMOTE}"
                             }
                         }
                     }
