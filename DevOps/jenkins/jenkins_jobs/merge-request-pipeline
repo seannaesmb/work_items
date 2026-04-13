@@ -8,6 +8,7 @@ pipeline {
             DEV_REMOTE_URL = 'ssh://svc_jenkins_d$@utincsmc7e.cloud.disa.mil:/mnt/local/repo/cmis'  // Replace
             TEST_REMOTE_URL = 'ssh://svc_jenkins_d$@utincsmc7i.cloud.disa.mil:/mnt/local/repo/cmis'  // Replace
             GIT_CREDENTIALS_ID = 'C2SF-jenkins-ssh-utincsmc7e'
+            jiraKey = ''
         }
 
 
@@ -16,6 +17,7 @@ pipeline {
             steps {
                 // echo ${env.gitlabSourceBranch}
                 git branch: "${env.gitlabSourceBranch}", credentialsId: 'jenkins_cmis_token', url: "${env.gitlabSourceRepoHttpUrl}"
+                sh 'git log -1'
             }
         }
     
@@ -30,7 +32,9 @@ pipeline {
             }
                      steps {
                             script {
+                                // checkout scmGit(branches: [[name: '${env.gitlabSourceBranch}']], extensions: [], userRemoteConfigs: [[credentialsId: 'srv_cmis', url: '${env.gitlabSourceRepoHttpUrl}']])
                                 sh 'ls -la .; pwd'
+                                sh 'printenv'
                                 // sh "git remote add ${DEV_REMOTE} ${DEV_REMOTE_URL} || true"
                                 // sh "git fetch origin ${env.gitlabSourceBranch} || true"
                                 // sh "git push ${DEV_REMOTE} ${env.gitlabSourceBranch}.checkout"
@@ -50,16 +54,29 @@ pipeline {
                      steps {
                             script {
                                 ls -l
-                                // sh "git remote add ${TEST_REMOTE} ${TEST_REMOTE_URL} || true"
+                                // sh "git remote add ${DEV_REMOTE} ${DEV_REMOTE_URL} || true"
                                 // sh "git fetch origin ${env.gitlabSourceBranch} || true"
-                                // sh "git push ${TEST_REMOTE} ${env.gitlabSourceBranch}.checkout"
-                                // echo "Pushed ${env.gitlabSourceBranch} to ${TEST_REMOTE}"
+                                // sh "git push ${DEV_REMOTE} ${env.gitlabSourceBranch}.checkout"
+                                // echo "Pushed ${env.gitlabSourceBranch} to ${DEV_REMOTE}"
                             }
                         }
                     }
                 }
         post {
-            success { echo "Push completed" }
+            success { 
+                script {
+                    def jiraKey = sh(script: "echo \"${env.gitlabSourceBranch}\" | grep -oE '[A-Z]{2,}-[0-9]+' | head -1 || true", returnStdout: true).trim()
+                    if (!jiraKey) {
+                        jiraKey = sh(script: "git log -1 --pretty=%B | grep -oE '[A-Z]{2,}-[0-9]+' | head -1 || true", returnStdout: true).trim()
+                    }
+
+                    if (jiraKey) {
+                      sh "echo $jiraKey"
+                       jiraComment body: 'Branch pushed to GitLab from Jenkins build ${env.BUILD_URL}.', issueKey: "$jiraKey"
+                    } 
+                     else {
+                        echo "No JIRA ticket found in branch name or latest commit message."
+                    } } }
             failure { echo "Push failed" }
             always {
                 emailext(
@@ -69,5 +86,5 @@ pipeline {
                 )
             }
         }
-    }
+}
 
