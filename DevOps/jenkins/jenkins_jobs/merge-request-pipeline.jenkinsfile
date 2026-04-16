@@ -38,7 +38,8 @@ pipeline {
                                 // sh "git remote add ${DEV_REMOTE} ${DEV_REMOTE_URL} || true"
                                 // sh "git fetch origin ${env.gitlabSourceBranch} || true"
                                 // sh "git push ${DEV_REMOTE} ${env.gitlabSourceBranch}.checkout"
-                                // echo "Pushed ${env.gitlabSourceBranch} to ${DEV_REMOTE}"
+                                 echo "Pushed ${env.gitlabSourceBranch} to ${DEV_REMOTE}"
+                                 env.CURRENT_STAGE = 'DEV ENCLAVE'
                             }
                         }
                     }
@@ -57,7 +58,8 @@ pipeline {
                                 // sh "git remote add ${DEV_REMOTE} ${DEV_REMOTE_URL} || true"
                                 // sh "git fetch origin ${env.gitlabSourceBranch} || true"
                                 // sh "git push ${DEV_REMOTE} ${env.gitlabSourceBranch}.checkout"
-                                // echo "Pushed ${env.gitlabSourceBranch} to ${DEV_REMOTE}"
+                                 echo "Pushed ${env.gitlabSourceBranch} to ${TEST_REMOTE}"
+                                 env.CURRENT_STAGE = 'TEST ENCLAVE'
                             }
                         }
                     }
@@ -72,7 +74,7 @@ pipeline {
 
                     if (jiraKey) {
                       sh "echo $jiraKey"
-                       jiraComment body: 'Branch pushed to GitLab from Jenkins build ${env.BUILD_URL}.', issueKey: "$jiraKey"
+                       jiraComment body: "Latest change has been pushed to ${env.CURRENT_STAGE} Environment \nURL: ${env.BUILD_URL}.", issueKey: "$jiraKey"
                     } 
                      else {
                         echo "No JIRA ticket found in branch name or latest commit message."
