@@ -11,6 +11,8 @@ pipeline {
             MR_IID           = "${env.gitlabMergeRequestIid}"
             PROJECT_ID       = "${env.gitlabMergeRequestTargetProjectId}"
             jiraKey = ''
+            REMOTE_WORKDIR = "/cygdrive/d/jenkins/workspace/${JOB_NAME}"
+
         }
 
 
@@ -56,11 +58,18 @@ pipeline {
                         def anyFailed = false
                         def sshUser = 'svc_jenkins_d$'
                         def sshHost = 'sql.host.name'
+                        def sshUserEscaped = sshUser.replace('$', '\\$')
+                        script: """
+
+                        ssh -o StrictHostKeyChecking=no "${sshUserEscaped}@${sshHost}"\
+                        "WORKDIR="${REMOTE_WORKDIR}"\
+                        ls -ltrh
+                        
+                        """
                         
                 
                         env.SQL_FILES.split("\n").each { file ->
                             def outFile = "${env.WORKSPACE}/.sql_out_${file.tokenize('/').last()}"
-                            def sshUserEscaped = sshUser.replace('$', '\\$')
                             def status = sh(
                                     script: """
                                     echo \"Connecting as: ${sshUserEscaped}@${sshHost}\"
