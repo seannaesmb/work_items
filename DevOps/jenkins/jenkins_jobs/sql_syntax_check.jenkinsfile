@@ -1,0 +1,128 @@
+pipeline {
+    agent {
+        label 'cmis'
+    }
+          environment {
+            DEV_REMOTE = 'cmis_dev_7e'
+            TEST_REMOTE = 'cmis_test_7i'
+            DEV_REMOTE_URL = 'ssh://svc_jenkins_d$@cship.host.name:/mnt/local/repo/cmis'  // Replace
+            TEST_REMOTE_URL = 'ssh://svc_jenkins_d$@cship.host.name:/mnt/local/repo/cmis'  // Replace
+            GIT_CREDENTIALS_ID = 'C2SF-jenkins-ssh-cship'
+            MR_IID           = "${env.gitlabMergeRequestIid}"
+            PROJECT_ID       = "${env.gitlabMergeRequestTargetProjectId}"
+            jiraKey = ''
+        }
+
+
+    stages {
+        stage('Checkout the code') {
+            steps {
+                // echo ${env.gitlabSourceBranch}
+                git branch: "${env.gitlabSourceBranch}", credentialsId: 'jenkins_cmis_token', url: "${env.gitlabSourceRepoHttpUrl}"
+                sh 'git log -1'
+            }
+        }
+    
+     stage('Find changed SQL') {
+      steps {
+        script {
+          def files = sh(
+            script: """
+            //   git diff --name-only origin/${env.gitlabSourceBranch}...HEAD | grep '\\.sql' || true
+                  git diff --name-only origin/gerrit-generated-dev...HEAD | grep '\\.sql' || true
+
+            """,
+            returnStdout: true
+          ).trim()
+
+          env.SQL_FILES = files
+          echo "SQL files:\n${files}"
+                }          
+         }
+     }
+        stage('Validate sql file remotely') {
+            when {
+                allOf {
+                    // expression { env.gitlabAction == 'close' || env.gitlabAction == 'merge' }
+                    // expression { env.gitlabSourceBranch == 'gerrit-generated-dev' }
+                    expression { env.SQL_FILES != '' }
+
+                }
+            }
+                     steps {
+                sshagent(credentials: ['C2SF-jenkins-ssh-cship']) {
+                    script {
+                        def results = ""
+                        def anyFailed = false
+                        def sshUser = 'svc_jenkins_d$'
+                        def sshHost = 'sql.host.name'
+                        
+                
+                        env.SQL_FILES.split("\n").each { file ->
+                            def outFile = "${env.WORKSPACE}/.sql_out_${file.tokenize('/').last()}"
+                            def sshUserEscaped = sshUser.replace('$', '\\$')
+                            def status = sh(
+                                    script: """
+                                    echo \"Connecting as: ${sshUserEscaped}@${sshHost}\"
+                                    ssh -o StrictHostKeyChecking=no "${sshUserEscaped}@${sshHost}" \
+                                        "hostname" \
+                                        2>&1 | tee "${outFile}"
+                                    exit \${PIPESTATUS[0]}
+                                """,
+                                // script: """
+                                //     ssh -o StrictHostKeyChecking=no user@sql-host \
+                                //         "sqlcmd -S your_server -d your_db -i ${file} -b" \
+                                //         2>&1 | tee "${outFile}"
+                                //     exit \${PIPESTATUS[0]}
+                                // """,
+                                returnStatus: true
+                            )
+                
+                            def output = fileExists(outFile) ? readFile(outFile).trim() : '(no output)'
+                            def label  = status == 0 ? '✅' : '❌'
+                            results   += "\n${label} --- ${file} ---\n${output}\n"
+                
+                            if (status != 0) anyFailed = true
+                        }
+                
+                        env.SQL_CHECK_OUTPUT = results
+                        env.SQL_CHECK_EXIT   = anyFailed ? '1' : '0'
+                        env.SQL_CHECK_STATUS = anyFailed ? 'failed' : 'passed'
+                    }
+                }
+                     }
+        }
+    }
+   
+        post {
+            success { 
+                script {
+                    def jiraKey = sh(script: "git log -1 --pretty=%B | grep -oE '[A-Z]{2,}-[0-9]+' | head -1 || true", returnStdout: true).trim()
+                    def sqlStatus = sh(script: "echo \"${env.SQL_CHECK_STATUS}\" || true", returnStdout: true).trim()
+                    def sqlOutput = sh(script: "echo \"${env.SQL_CHECK_OUTPUT}\" || true", returnStdout: true).trim()
+
+                    echo "$sqlStatus"
+                    if (!jiraKey) {
+                        jiraKey = sh(script: "git log -1 --pretty=%B | grep -oE '[A-Z]{2,}-[0-9]+' | head -1 || true", returnStdout: true).trim()
+                    }
+
+                    if (jiraKey) {
+                      sh "echo $jiraKey"
+                       jiraComment body: "Latest change has been pushed to ${env.CURRENT_STAGE} Environment \nURL: ${env.BUILD_URL}.", issueKey: "$jiraKey"
+                      jiraComment body: "SQL run info below $sqlOutput ", issueKey: "$jiraKey"
+
+                    }
+                     else {
+                        echo "No JIRA ticket found in branch name or latest commit message."
+                    } } }
+            failure { echo "Push failed" }
+            always {
+                emailext(
+                subject: "${currentBuild.currentResult}: ${env.JOB_NAME} ${env.BUILD_NUMBER}",
+                to: "sean.m.brown92.ctr@mail.mil",
+                body: "${env.BUILD_URL}"
+                )
+            }
+        }
+    }
+
