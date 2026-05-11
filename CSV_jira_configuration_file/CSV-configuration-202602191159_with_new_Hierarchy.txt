@@ -27,7 +27,7 @@
       "jira.field" : "summary"
     },
     "start" : {
-      "existing.custom.field" : "10218"
+      "existing.custom.field" : "10522"
     },
     "follows" : {
       "link.type" : "10204"
@@ -51,7 +51,7 @@
       "jira.field" : "assignee"
     },
     "op-ticket-legacy" : {
-      "existing.custom.field" : "10501"
+      "existing.custom.field" : "18563"
     },
     "comment" : {
       "jira.field" : "comment"
