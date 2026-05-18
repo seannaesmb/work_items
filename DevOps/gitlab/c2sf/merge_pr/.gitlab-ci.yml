@@ -58,7 +58,7 @@ fortify_version_create:
         VERSION=$MR_ID
         fi
 
-      curl --insecure -X 'POST'  "https://fortify.c2sf.mil/api/v1/projectVersions"   -H "accept: application/json"   -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}"   -H "Content-Type: application/json"   -d '{ "name" : "'"$VERSION"'" , "active" : true, "committed": false, "project" : { "id" : "184" }, "issueTemplateId": "Prioritized-HighRisk-Project-Template" }' > version_create.json
+      curl --insecure -X 'POST'  "https://fortify.c2sf.mil/api/v1/projectVersions"   -H "accept: application/json"   -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}"   -H "Content-Type: application/json"   -d '{ "name" : "'"$VERSION"'" , "active" : true, "committed": false, "project" : { "id" : 184 }, "issueTemplateId": "Prioritized-HighRisk-Project-Template" }' > version_create.json
     - |
       curl --insecure -X "GET" "https://fortify.c2sf.mil/api/v1/projectVersions?q=name:$VERSION&projectId=184" -H "accept: application/json" -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" -H "Content-Type: application/json" > app.json
     - |
@@ -91,6 +91,8 @@ fortify_version_create:
             echo "Name of version:" $( jq -c ".data.name" version_create.json)
             echo "Response code:" $( jq -c ".responseCode" version_create.json)
             id_creation=$( jq -c ".data.name" version_create.json)
+            numerical_id=$( jq -c ".data[0].id" version_create.json)
+
           
           elif [[ "$( cat version_create.json | jq -c '.responseCode' )" -eq "400" && "$( cat version_create.json | jq -c '.message' )" =~ "duplicate name" ]]; then
             echo "Version found will use and update"
@@ -100,6 +102,8 @@ fortify_version_create:
       fi
         echo "almost done"
 
+        echo "Adding new attributes to version"
+        curl --insecure -X PUT "https://fortify.c2sf.mil/api/v1/projectVersions/$numerical_id/attributes" -H "Authorization: FortifyToken $FORTIFY_API_TOKEN" -H "Content-Type: application/json" -H "accept: application/json" -d '[{"attributeDefinitionId": 5, "values": [{"guid": "Active"}], "value": null},{"attributeDefinitionId": 6, "values": [{"guid": "Internal"}], "value": null},{"attributeDefinitionId": 7, "values": [{"guid": "internalnetwork"}], "value": null}]'
 
         
         #  if [[ -f version_create.json ]]; then
