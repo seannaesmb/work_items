@@ -12,7 +12,7 @@
     },
         "parent_epic"      : { "jira.field" : "Epic Link" },
         "parent_initiative": { "jira.field" : "Parent Link" },
-        "parent_same_link" : { "link.type"  : "10555" },
+        "parent_same_link" : { "link.type"  : "10532" },
         "Child of"         : { "link.type"  : "10555" },
     "relates" : {
       "link.type" : "10003"
