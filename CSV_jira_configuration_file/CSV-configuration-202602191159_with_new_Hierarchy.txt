@@ -62,6 +62,9 @@
     "updated" : {
       "jira.field" : "updated"
     },
+    "external_id" : {
+      "jira.field" : "External issue ID"
+    },
     "requires" : {
       "link.type" : "10207"
     },
