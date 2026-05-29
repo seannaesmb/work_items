@@ -13,7 +13,6 @@ def detect_encoding(file_path, num_bytes=10000):
     return result['encoding'] or 'utf-8'
 
 def convert_csv_to_ascii(input_file, output_file, has_header=True):
-    # Detect encoding
     detected_encoding = detect_encoding(input_file)
     print(f"Detected encoding: {detected_encoding}")
 
@@ -24,7 +23,12 @@ def convert_csv_to_ascii(input_file, output_file, has_header=True):
         writer = csv.writer(outfile)
 
         for i, row in enumerate(reader):
-            ascii_row = [unidecode(cell) if isinstance(cell, str) else cell for cell in row]
+            ascii_row = []
+            for cell in row:
+                if isinstance(cell, str):
+                    cell = cell.replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ')
+                    cell = unidecode(cell)
+                ascii_row.append(cell)
             writer.writerow(ascii_row)
 
     print(f"Converted CSV saved to: {output_file}")
