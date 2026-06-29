@@ -15,8 +15,9 @@ build-job:
     # - docker pull adobecoldfusion/coldfusion:latest-2021
     # - docker pull "$DOCKER_CF_INFO":"$DOCKER_CF_TAG"
     - |
-      echo "FROM $DOCKER_CF_INFO:$DOCKER_CF_TAG" >> dockerfile
-      echo "RUN dnf update -y && dnf install jq coreutils -y --allowerasing " >> dockerfile
+      echo "RUN dnf update -y && dnf install git maven.noarch java-17-openjdk.x86_64 jq coreutils -y --allowerasing " >> dockerfile
+      echo "WORKDIR /app" >> dockerfile
+      echo "RUN mvn clean && mvn package" >> dockerfile
 
     - docker build -t "$DOCKER_CF_INFO":"$DOCKER_CF_TAG" .
 
@@ -32,3 +33,4 @@ test-job:
   script:
     - jq --version
     - wc --version
+    - ls -ltrh /app/target/
