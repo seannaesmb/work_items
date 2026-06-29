@@ -21,6 +21,7 @@ stages: # List of stages for jobs, and their order of execution
   - scan
   - jira_ticket_link_apply
   - security
+  - internal_code_scanners
 
 variables:
   FORTIFY_BUILD_ID: "sandbox_1"
@@ -230,6 +231,40 @@ jira_ticket_apply_fortify_url:
     - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev" || $CI_PIPELINE_SOURCE == "merge_request_event"'
       when: never # Do not run the pipeline for these branches
     - when: always # Run the pipeline for all other branches
+
+internal_code_scanners:
+  image: docker-registry.c2sf.mil/cmis/rockylinux:latest
+  stage: internal_code_scanners
+
+  script:
+    # - |
+    #  curl --insecure -X "GET" "https://fortify.c2sf.mil/api/v1/projectVersions?q=name:$VERSION&projectId=184" -H "accept: application/json" -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" -H "Content-Type: application/json" > app.json
+    - |
+      set -o pipefail
+      export JIRA_BASE_URL="${JIRA_BASE}"
+
+      cd $CI_PROJECT_DIR
+      tmp=($(git show $CI_COMMIT_SHA --format= --name-status --diff-filter=d | sed -e 's/^R[[:space:]]\+[^ ]\+[[:space:]]\+/R/;s/^[[:alpha:]]\+[[:space:]]\+//' | grep -i -e '\.cfm$' -e '\.cfc$' | sed -ne 's|^src/htdocs/||p'||true))
+      echo ${#tmp[*]}
+        if [[ ! ${#tmp[*]} -eq 0 ]]; then
+        which bash
+          for line in ${tmp[*]}; do echo $line; bash -x /app/bin/codereview.bash "" "$(git rev-parse --show-toplevel)/src/htdocs" "$line" > /tmp/codereview-report.json; done
+        fi
+      ## LABEL - customfield_10272 
+      ## FORTIFY_URL - Staging is - customfield_11300
+      ##---orig--##
+      #curl --fail --show-error --insecure -X PUT   "https://jira.c2sf.mil/rest/api/2/issue/$issue_key"   -H 'accept: application/json'   -H "Authorization: Bearer $JIRA_TOKEN"   -H 'Content-Type: application/json' -d '{ "fields": { "customfield_16919":"'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'"} }'
+
+      # Remove <customfield> and make customfield used for URL
+      ##curl --fail --show-error --insecure -X PUT   'https://jira.c2sf.mil/rest/api/2/issue/CMIS-5'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json' -d '{ "update": { "<customfield>": [ { "set": "'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'" } ] } }'
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev" || $CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never # Do not run the pipeline for these branches
+    - when: always # Run the pipeline for all other branches
+  artifacts:
+    paths:
+      - /tmp/codereview-report.json
 
 fortify_scan_merge_request:
   stage: security
