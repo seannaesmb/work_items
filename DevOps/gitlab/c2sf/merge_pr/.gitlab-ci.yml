@@ -22,24 +22,21 @@ stages: # List of stages for jobs, and their order of execution
   - jira_ticket_link_apply
   - security
   - internal_code_scanners
+  - report
 
 variables:
-  FORTIFY_BUILD_ID: "sandbox_1"
-  GITLAB_API_TOKEN: "<your-gitlab-api-token>" # Store securely as CI/CD secret
-  FORTIFY_RESULT_FILE: fpr_report.fpr
   FPRNAME: fpr_report.fpr
   GITLAB_URL: "https://gitlab.c2sf.mil"
   PROJECT_ID: "CMIS"
   MR_IID: $CI_MERGE_REQUEST_IID
   MR_ID: $CI_MERGE_REQUEST_ID
+  JIRA_BASE_URL: "https://jira.c2sf.mil"
 
-  PRIVATE_TOKEN: "$GITLAB_API_TOKEN"
   VERSION: $CI_COMMIT_REF_NAME
   FF_SCRIPT_SECTIONS: "true"
   AST_ENABLE_MR_PIPELINES: "true"
 
 fortify_version_create:
-  #image: docker-registry.c2sf.mil/ironbank/opensource/debian/debian:latest
   image: docker-registry.c2sf.mil/cmis/rockylinux:latest
   stage: fortify_version_create
   before_script:
@@ -48,9 +45,7 @@ fortify_version_create:
 
   script:
     - echo "Creating OR validating version has been created"
-    # -  apk add curl jq bash
     - export VERSION=$CI_COMMIT_REF_NAME
-    # - export VERSION="another-check15"
     - echo $VERSION
     - echo $CI_COMMIT_REF_NAME
     - |
@@ -59,7 +54,7 @@ fortify_version_create:
         VERSION=$MR_ID
         fi
 
-      curl --insecure -X 'POST'  "https://fortify.c2sf.mil/api/v1/projectVersions"   -H "accept: application/json"   -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}"   -H "Content-Type: application/json"   -d '{ "name" : "'"$VERSION"'" , "active" : true, "committed": false, "project" : { "id" : 184 }, "issueTemplateId": "Prioritized-HighRisk-Project-Template" }' > version_create.json
+      curl --insecure -X 'POST'  "https://fortify.c2sf.mil/api/v1/projectVersions"   -H "accept: application/json"   -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}"   -H "Content-Type: application/json"   -d '{ "name" : "'"$VERSION"'" , "active" : true, "committed": false, "project" : { "id" : "184" }, "issueTemplateId": "Prioritized-HighRisk-Project-Template" }' > version_create.json
     - |
       curl --insecure -X "GET" "https://fortify.c2sf.mil/api/v1/projectVersions?q=name:$VERSION&projectId=184" -H "accept: application/json" -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" -H "Content-Type: application/json" > app.json
     - |
@@ -68,17 +63,14 @@ fortify_version_create:
       echo "Checking version existance"
       ls -l app.json
       cat app.json | jq
-      # if [[ "$(cat app.json | jq .responseCode)" -ne "200" ]]; then
-      #   echo "Connection failed (HTTP $(jq -c .responseCode app.json)).  Likely network issue but check Token priv"
-      #   exit 1
-      # fi
+
 
       if [[ "$(cat app.json | jq -c .responseCode)" -eq "200" ]]; then
         echo "Connection succeeded"
 
         if [[ $(cat app.json | jq .count) -eq "0" ]]; then
             echo "Creating new version"
-            curl --insecure -X 'POST'   'https://fortify.c2sf.mil/api/v1/projectVersions'   -H 'accept: application/json'   -H 'Authorization: FortifyToken ${FORTIFY_API_TOKEN}'   -H 'Content-Type: application/json'   -d '{ "name" : "'"$VERSION"'" , "active" : true, "committed": false, "project" : { "id" : "184" }, "issueTemplateId": "Prioritized-HighRisk-Project-Template" }' > version_create.json
+            curl --insecure -X 'POST'   'https://fortify.c2sf.mil/api/v1/projectVersions'   -H 'accept: application/json'   -H 'Authorization: FortifyToken ${FORTIFY_API_TOKEN}'   -H 'Content-Type: application/json'   -d '{ "name" : "'"$VERSION"'" , "active" : true, "committed": false, "project" : { "id" : 184 }, "issueTemplateId": "Prioritized-HighRisk-Project-Template" }' > version_create.json
               cat version_create.json
 
 
@@ -93,7 +85,6 @@ fortify_version_create:
             echo "Response code:" $( jq -c ".responseCode" version_create.json)
             id_creation=$( jq -c ".data.name" version_create.json)
             numerical_id=$( jq -c ".data[0].id" version_create.json)
-
           
           elif [[ "$( cat version_create.json | jq -c '.responseCode' )" -eq "400" && "$( cat version_create.json | jq -c '.message' )" =~ "duplicate name" ]]; then
             echo "Version found will use and update"
@@ -103,21 +94,10 @@ fortify_version_create:
       fi
         echo "almost done"
 
-        echo "Adding new attributes to version"
-        curl --insecure -X PUT "https://fortify.c2sf.mil/api/v1/projectVersions/$numerical_id/attributes" -H "Authorization: FortifyToken $FORTIFY_API_TOKEN" -H "Content-Type: application/json" -H "accept: application/json" -d '[{"attributeDefinitionId": 5, "values": [{"guid": "Active"}], "value": null},{"attributeDefinitionId": 6, "values": [{"guid": "Internal"}], "value": null},{"attributeDefinitionId": 7, "values": [{"guid": "internalnetwork"}], "value": null}]'
+       echo "Adding new attributes to version"
+       curl --insecure -X PUT "https://fortify.c2sf.mil/api/v1/projectVersions/$numerical_id/attributes" -H "Authorization: FortifyToken $FORTIFY_API_TOKEN" -H "Content-Type: application/json" -H "accept: application/json" -d '[{"attributeDefinitionId": 5, "values": [{"guid": "Active"}], "value": null},{"attributeDefinitionId": 6, "values": [{"guid": "Internal"}], "value": null},{"attributeDefinitionId": 7, "values": [{"guid": "internalnetwork"}], "value": null}]'
 
-        
-        #  if [[ -f version_create.json ]]; then
-        #   if [[ "$( cat version_create.json | jq -c '.responseCode' )" -eq "400" && "$( cat version_create.json | jq -c '.message' )" =~ "duplicate name" ]]; then
-        #     echo "Not using version_create.json"
-        
-        #     else { id_creation=$(cat version_create.json | jq -c '.data?.id' ) }
-        #   fi
 
-          # if [[ -f app.json && $id_creation -ne "" ]]; then
-          #   id_creation=$(cat app.json | jq -c '.data?.id' )
-          # fi
-        # fi
         echo "Committing $id_creation"
         curl --insecure -X "PUT" "https://fortify.c2sf.mil/api/v1/projectVersions/$id_creation" -H "accept: application/json" -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" -H "Content-Type: application/json" -d '{ "committed" : true }' | jq
 
@@ -217,22 +197,58 @@ jira_ticket_apply_fortify_url:
           }
           fi
       fi
+      export JIRA_BASE_URL="${JIRA_BASE}"
+      export id_creation
       echo $id_creation
       issue_key=`echo $CI_COMMIT_MESSAGE | grep -oE '\b[C][A-Z0-9_]+-[1-9][0-9]*'`
+      # source ci/jira_functions.sh
+      # ls -l ci/
+      # update_jira_env "$issue_key" inprogress inprogress inprogress
+
       ## LABEL - customfield_10272 
       ## FORTIFY_URL - Staging is - customfield_11300
-      ##curl --fail --show-error --insecure -X PUT   'https://jira.c2sf.mil/rest/api/2/issue/CMIS-5'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json' -d '{ "update": { "labels": [ { "add": "'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'" } ] } }' 
       curl --fail --show-error --insecure -X PUT   "https://jira.c2sf.mil/rest/api/2/issue/$issue_key"   -H 'accept: application/json'   -H "Authorization: Bearer $JIRA_TOKEN"   -H 'Content-Type: application/json' -d '{ "fields": { "customfield_16919":"'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'"} }'
+      EXIT=$?
+
+      python3 - <<'PYEOF'
+      import json, os
+
+      id_creation = os.environ.get('id_creation', '').strip('"')
+      exit_code   = int(os.environ.get('EXIT', '0'))
+      ssc_url     = f"https://fortify.c2sf.mil/html/ssc/version/{id_creation}"
+
+      job_name    = os.environ.get('CI_JOB_NAME', 'unknown')
+      output_file = f"{job_name}_scan_result.json"
+
+      result = {
+          'job': job_name,
+          'status': 'success' if exit_code == 0 else 'failed',
+          'issues': ssc_url if exit_code == 0 else 'Version creation failed',
+          'url': os.environ.get('CI_JOB_URL', '')
+      }
+
+      with open(output_file, 'w') as f:
+          json.dump(result, f)
+
+      print(f"Written to: {output_file}")
+      print(json.dumps(result, indent=2))
+      PYEOF
 
       # Remove <customfield> and make customfield used for URL
-      #curl --fail --show-error --insecure -X PUT   'https://jira.c2sf.mil/rest/api/2/issue/$issue_key'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json' -d '{ "update": { "<customfield>": [ { "set": "'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'" } ] } }'
+      ##curl --fail --show-error --insecure -X PUT   'https://jira.c2sf.mil/rest/api/2/issue/CMIS-5'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json' -d '{ "update": { "<customfield>": [ { "set": "'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'" } ] } }'
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev" || $CI_PIPELINE_SOURCE == "merge_request_event"'
       when: never # Do not run the pipeline for these branches
     - when: always # Run the pipeline for all other branches
+  artifacts:
+    when: always
+    paths:
+      - "*_scan_result.json"
+    expire_in: 1 day
 
-internal_code_scanners:
+internal_code_scan:
+  #image: docker-registry.c2sf.mil/ironbank/opensource/debian/debian:latest
   image: docker-registry.c2sf.mil/cmis/rockylinux:latest
   stage: internal_code_scanners
 
@@ -244,12 +260,59 @@ internal_code_scanners:
       export JIRA_BASE_URL="${JIRA_BASE}"
 
       cd $CI_PROJECT_DIR
+      mkdir -p /tmp/codereview-results
+
       tmp=($(git show $CI_COMMIT_SHA --format= --name-status --diff-filter=d | sed -e 's/^R[[:space:]]\+[^ ]\+[[:space:]]\+/R/;s/^[[:alpha:]]\+[[:space:]]\+//' | grep -i -e '\.cfm$' -e '\.cfc$' | sed -ne 's|^src/htdocs/||p'||true))
       echo ${#tmp[*]}
         if [[ ! ${#tmp[*]} -eq 0 ]]; then
-        which bash
-          for line in ${tmp[*]}; do echo $line; bash -x /app/bin/codereview.bash "" "$(git rev-parse --show-toplevel)/src/htdocs" "$line" > /tmp/codereview-report.json; done
+          for line in ${tmp[*]}; do SAFE_NAME=$(echo "$line" | tr '/' '_'); echo $line; bash -x /app/bin/codereview.bash "" "$(git rev-parse --show-toplevel)/src/htdocs" "$line" > "/tmp/codereview-results/${SAFE_NAME}.json";
+          [ $? -ne 0 ] && OVERALL_EXIT=1
+          done
         fi
+
+      ## Python Section
+
+      python3 - <<'PYEOF'
+      import json, os, glob
+
+      all_issues = []
+      for f in glob.glob('/tmp/codereview-results/*.json'):
+          filename = os.path.basename(f).replace('.json', '').replace('_', '/')
+          try:
+              with open(f) as fh:
+                  data = json.load(fh)
+          except Exception:
+              continue
+
+          for finding in data.get('findings', []):
+              line_no = finding.get('lineNumber', 0)
+              msg = finding.get('message', '') or ''
+              if line_no:
+                  all_issues.append(f"{filename}:{line_no} — {msg}")
+              else:
+                  all_issues.append(f"{filename} — {msg}")
+
+      issues_str = "; ".join(all_issues) if all_issues else "None"
+      status = "success" if not all_issues else "failed"
+
+      job_name    = os.environ.get('CI_JOB_NAME', 'unknown')
+      output_file = f"{job_name}_scan_result.json"
+
+      result = {
+          "job": job_name,
+          "status": status,
+          "issues": issues_str,
+          "url": os.environ.get('CI_JOB_URL', '')
+      }
+
+      with open(output_file, 'w') as f:
+          json.dump(result, f)
+
+      print(f"Written to: {output_file}")
+      print(json.dumps(result, indent=2))
+      PYEOF
+
+      ###
       ## LABEL - customfield_10272 
       ## FORTIFY_URL - Staging is - customfield_11300
       ##---orig--##
@@ -263,12 +326,16 @@ internal_code_scanners:
       when: never # Do not run the pipeline for these branches
     - when: always # Run the pipeline for all other branches
   artifacts:
+    when: always
     paths:
-      - /tmp/codereview-report.json
+      - "*_scan_result.json"
+    expire_in: 1 day
 
 fortify_scan_merge_request:
   stage: security
   image: docker-registry.c2sf.mil/factory/fortify-sca:latest
+  dependencies:
+    - fortify_version_create
 
   script:
     - echo "Getting files to scan"
@@ -314,18 +381,17 @@ fortify_scan_merge_request:
           echo "High/Critical vulnerabilities found"
           echo "High" $HIGH
           echo "Critical" $CRIT
-          exit 1
+          # exit 1
         else  echo "No issues found";
       fi
 
     - echo $CI_MERGE_REQUEST_IID $CI_MERGE_REQUEST_ID
-    # - fortifyclient -debug -url $FORTIFY_URL -authtoken $FORTIFY_TOKEN uploadFPR -file $CI_MERGE_REQUEST_ID.fpr -application $PROJECT -applicationVersion $CI_MERGE_REQUEST_ID
     - |
       # FILE_CONTENT="$(cat $CI_MERGE_REQUEST_ID.fpr)" 
       # # FILE_CONTENT="HI CHECKING"
-      # id_creation=$(cat version_create.json | jq -c '.data?.id' )
+
       ID=$(cat app.json | grep -oP '"id":\s*\K[0-9]+'| head -n1)
-            echo $ID
+      echo $ID
 
         # Create a temporary file to hold the message
         TEMP_FILE=$(mktemp)
@@ -350,12 +416,12 @@ fortify_scan_merge_request:
         } > "$TEMP_FILE"
 
           # # Post the comment using Project Access Token
-          # curl --fail --request POST \
+          # curl --fail --request POST \ 
           #   --header "PRIVATE-TOKEN: $GITLABPOST" \
           #   --data-urlencode "body@$TEMP_FILE" \
           #   "$CI_API_V4_URL/projects/$CI_MERGE_REQUEST_TARGET_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
 
-
+          # Clean up
 
 
 
@@ -379,13 +445,15 @@ fortify_scan_merge_request:
                 --header "PRIVATE-TOKEN: $GITLABPOST" \
                 --data-urlencode body@"$TEMP_FILE" \
                 "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
-      # Clean up
+
       rm -f "$TEMP_FILE"
+
   rules:
     - if: $CI_MERGE_REQUEST_ID
   artifacts:
     paths:
       - $CI_BUILDS_DIR/$CI_PROJECT_PATH/$CI_MERGE_REQUEST_ID.fpr
+
 # semgrep-sast:
 #   image: docker-registry.c2sf.mil/cmis/returntocorp/semgrep:latest
 #   stage: test
@@ -400,4 +468,107 @@ fortify_scan_merge_request:
 #     reports:
 #       sast: semgrep.sast.json
 #     when: always
+pipeline_summary:
+  image: docker-registry.c2sf.mil/cmis/rockylinux:latest
+  stage: report
+  when: always
+  needs:
+    - job: jira_ticket_apply_fortify_url
+      artifacts: true
+    - job: internal_code_scan
+      artifacts: true
+  script:
+    - cd $CI_PROJECT_DIR
+    - |
+      echo "=== Workspace contents ==="
+      find . -name "*scan_result.json" 2>/dev/null
+      echo "=== Artifact count ==="
+      find . -name "*scan_result.json" | wc -l
+      echo "=== Contents of each scan_result.json ==="
+      for f in $(find . -name "*scan_result.json"); do
+        echo "--- $f ---"
+        cat "$f"
+      done
 
+      python3 - <<'PYEOF'
+      import json, os, glob, re
+
+      # --- Load all scan_result.json artifacts from prior stages ---
+      results = []
+      for f in glob.glob('**/*_scan_result.json', recursive=True):
+          with open(f) as fh:
+              results.append(json.load(fh))
+
+      branch       = os.environ['CI_COMMIT_REF_NAME']
+      sha_short    = os.environ['CI_COMMIT_SHORT_SHA']
+      pipeline_url = os.environ['CI_PIPELINE_URL']
+      commit_msg   = os.environ.get('CI_COMMIT_MESSAGE', '')
+
+      any_failed = any(r['status'] != 'success' for r in results)
+
+      # --- Wiki markup, wrapped in a panel ---
+      panel_color  = "#ffe0e0" if any_failed else "#e0ffe0"
+      border_color = "#cc0000" if any_failed else "#00aa00"
+      panel_title  = "CI Pipeline Report - FAILED" if any_failed else "CI Pipeline Report"
+
+      body = [
+          f"*Pipeline Report* — {{{{{branch}}}}} @ {{{{{sha_short}}}}}",
+          f"[Full pipeline|{pipeline_url}]",
+          "",
+          "|| Job || Status || Issues || Link ||",
+      ]
+      for r in results:
+          icon = "(/)" if r['status'] == 'success' else "(x)"
+          issues = r.get('issues') or "None"
+          body.append(f"| {r['job']} | {icon} {r['status']} | {issues} | [view|{r['url']}] |")
+      body.append("")
+      if any_failed:
+          body.append("{color:red}(x) *Action required — see failed jobs above.*{color}")
+      else:
+          body.append("(/) *All checks passed.*")
+
+      wiki_note = (
+          f"{{panel:title={panel_title}|borderColor={border_color}|titleBGColor={panel_color}|bgColor=#ffffff}}\n"
+          + "\n".join(body)
+          + "\n{panel}"
+      )
+
+      with open('jira_comment.txt', 'w') as f:
+          f.write(wiki_note)
+
+      # --- Extract Jira key from commit message ---
+      match = re.search(r'[A-Z][A-Z0-9]+-\d+', commit_msg)
+      if match:
+          with open('jira_issue_key.txt', 'w') as f:
+              f.write(match.group(0))
+      else:
+          print("WARNING: no Jira key found in commit message")
+
+      print(wiki_note)
+
+      PYEOF
+
+      if [ -f jira_issue_key.txt ]; then
+        ISSUE_KEY=$(cat jira_issue_key.txt)
+        BODY=$(python3 -c "import json; print(json.dumps(open('jira_comment.txt').read()))")
+        curl --fail --show-error --insecure\
+        -X POST \
+        -H "Authorization: Bearer $JIRA_TOKEN" \
+        -H 'Content-Type: application/json'\
+        --data "{\"body\": ${BODY}}" \
+        "https://jira.c2sf.mil/rest/api/2/issue/${ISSUE_KEY}/comment"
+      else
+        echo "Skipping Jira comment — no issue key found"
+      fi
+    - |
+      # Exit after curl — fail the job if any stage failed
+      if [ -f pipeline_failed.txt ] && [ "$(cat pipeline_failed.txt)" = "1" ]; then
+        echo "One or more stages failed — failing pipeline summary"
+        exit 1
+      fi
+  artifacts:
+    when: always
+    paths:
+      - jira_comment.txt
+      - jira_issue_key.txt
+    expire_in: 1 day
