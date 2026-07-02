@@ -130,7 +130,17 @@ fortify_scan: # This job runs in the build stage, which runs first.
     - echo "Getting files to scan"
     - export files_to_scan=""
     - export file_count=0
-    - file_count=(`git show --pretty="format:" --name-only`)
+    - |
+      if [ "$CI_COMMIT_BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+        # First push to branch — only HEAD's own changes are safe to inspect
+        file_count=($(git show --pretty="format:" --name-only HEAD | sort -u))
+      else
+        # Diff the full range so multiple commits in one push are all captured
+         file_count=($(git diff --name-only ${CI_COMMIT_BEFORE_SHA}..${CI_COMMIT_SHA} | sort -u))
+      fi
+
+      echo $file_count
+      # file_count=(`git show --pretty="format:" --name-only`)
 
     - |
       if [[ $CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev" ]]; then
@@ -141,15 +151,14 @@ fortify_scan: # This job runs in the build stage, which runs first.
         echo " Post file count"
         for line in ${file_count[@]}; do
               if [[ ${#file_count[*]} -gt "1" ]]; then 
+
                 files_to_scan+="$line " 
               else
                files_to_scan+="$line"
               fi
           echo $line
-            done
-      fi      
-
-      ls -l .
+        done
+      fi
 
     # - sourceanalyzer -verbose -b srcbuild $CI_BUILDS_DIR/cmis/cmis/src/htdocs/**/*
 
@@ -261,8 +270,22 @@ internal_code_scan:
 
       cd $CI_PROJECT_DIR
       mkdir -p /tmp/codereview-results
+        if [ "$CI_COMMIT_BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+          # First push to branch — only HEAD's own diff is safe to inspect
+          RAW_FILES=$(git show $CI_COMMIT_SHA --format= --name-status --diff-filter=d)
+        else
+          # Full range diff so multiple commits in one push are all captured, deduped naturally
+          RAW_FILES=$(git diff $CI_COMMIT_BEFORE_SHA..$CI_COMMIT_SHA --name-status --diff-filter=d)
+        fi
 
-      tmp=($(git show $CI_COMMIT_SHA --format= --name-status --diff-filter=d | sed -e 's/^R[[:space:]]\+[^ ]\+[[:space:]]\+/R/;s/^[[:alpha:]]\+[[:space:]]\+//' | grep -i -e '\.cfm$' -e '\.cfc$' | sed -ne 's|^src/htdocs/||p'||true))
+        tmp=($(echo "$RAW_FILES" \
+          | sed -e 's/^R[[:space:]]\+[^ ]\+[[:space:]]\+/R/;s/^[[:alpha:]]\+[[:space:]]\+//' \
+          | grep -i -e '\.cfm$' -e '\.cfc$' \
+          | sed -ne 's|^src/htdocs/||p' \
+          | sort -u || true))
+
+
+      #tmp=($(git show $CI_COMMIT_SHA --format= --name-status --diff-filter=d | sed -e 's/^R[[:space:]]\+[^ ]\+[[:space:]]\+/R/;s/^[[:alpha:]]\+[[:space:]]\+//' | grep -i -e '\.cfm$' -e '\.cfc$' | sed -ne 's|^src/htdocs/||p'||true))
       echo ${#tmp[*]}
         if [[ ! ${#tmp[*]} -eq 0 ]]; then
           for line in ${tmp[*]}; do SAFE_NAME=$(echo "$line" | tr '/' '_'); echo $line; bash -x /app/bin/codereview.bash "" "$(git rev-parse --show-toplevel)/src/htdocs" "$line" > "/tmp/codereview-results/${SAFE_NAME}.json";
