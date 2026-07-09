@@ -1,0 +1,40 @@
+# STIG Manager docker-compose orchestration
+
+services:
+  auth:
+    image: nuwcdivnpt/stig-manager-auth
+    ports:
+      - "8888:8080"
+  db:
+    image: mysql:8.0
+    ports:
+      - "50001:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpw
+      - MYSQL_USER=stigman
+      - MYSQL_PASSWORD=stigman
+      - MYSQL_DATABASE=stigman
+    command: --innodb-buffer-pool-size=1024M --sort_buffer_size=16M 
+
+    cap_add:
+      - SYS_NICE  # workaround MySQL logging bug => mbind: Operation not permitted 
+  api:
+    image: nuwcdivnpt/stig-manager:latest
+    environment:
+      - STIGMAN_OIDC_PROVIDER=http://auth:8080/realms/stigman
+      - STIGMAN_CLASSIFICATION=U
+      - STIGMAN_DB_HOST=db
+      - STIGMAN_DB_PASSWORD=stigman
+      # Change envvar below if non-localhost browsers will access the API
+      - STIGMAN_CLIENT_OIDC_PROVIDER=http://localhost:8888/realms/stigman
+      # Customize the Welcome widget on the Home tab
+      # - STIGMAN_CLIENT_WELCOME_IMAGE=<client-relative-url-to-your-logo>
+      - STIGMAN_CLIENT_WELCOME_TITLE=Deployment Information
+      - STIGMAN_CLIENT_WELCOME_MESSAGE=Your deployment's Support process can be described here. You can provide a link below.
+      - STIGMAN_CLIENT_WELCOME_LINK=http://link_to_help_pages
+
+    init: true
+    ports:
+      - "54000:54000"
+
+
