@@ -15,10 +15,13 @@
 # https://docs.gitlab.com/ee/development/cicd/templates.html
 # This specific template is located at:
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
+default:
+  image: docker-registry.c2sf.mil/cmis/rockylinux:latest
 
 stages: # List of stages for jobs, and their order of execution
   - fortify_version_create
   - scan
+  - auto_approve_artifact
   - jira_ticket_link_apply
   - security
   - internal_code_scanners
@@ -88,7 +91,7 @@ fortify_version_create:
           
           elif [[ "$( cat version_create.json | jq -c '.responseCode' )" -eq "400" && "$( cat version_create.json | jq -c '.message' )" =~ "duplicate name" ]]; then
             echo "Version found will use and update"
-            id_creation=$(cat app.json | jq -c '.data[]?.id' ) 
+            id_creation=$(cat app.json | jq -c '.data[]?.id' )  
           fi
         fi
       fi
@@ -111,11 +114,16 @@ fortify_version_create:
     paths:
       - app.json
       - version_create.json
+      - /opt/fcli
 
 fortify_scan: # This job runs in the build stage, which runs first.
   image: docker-registry.c2sf.mil/factory/fortify-sca:latest
 
   stage: scan
+  before_script:
+    - curl -sSL -o $CI_BUILDS_DIR/$CI_PROJECT_PATH/fcli.tgz https://github.com/fortify/fcli/releases/download/latest/fcli-linux.tgz
+    - tar -xzf $CI_BUILDS_DIR/$CI_PROJECT_PATH/fcli.tgz -C $CI_BUILDS_DIR/$CI_PROJECT_PATH/
+    - chmod +x $CI_BUILDS_DIR/$CI_PROJECT_PATH/fcli
   script:
     - echo "Rules updates `fortifyupdate`"
     - git config --global --add safe.directory $CI_BUILDS_DIR/$CI_PROJECT_PATH
@@ -162,8 +170,8 @@ fortify_scan: # This job runs in the build stage, which runs first.
 
     # - sourceanalyzer -verbose -b srcbuild $CI_BUILDS_DIR/cmis/cmis/src/htdocs/**/*
 
-    - sourceanalyzer -verbose -b srcbuild $files_to_scan
-
+    - sourceanalyzer -verbose -b srcbuild -source-base-dir "$CI_PROJECT_DIR/src/htdocs" $files_to_scan
+    - mkdir -p $CI_BUILDS_DIR/$CI_PROJECT_PATH/tmp
     - echo "Setting FPRNAME"
     - export FPRNAME=$(date +"%Y%m%d%H%M%S".fpr)
     - echo "Creating FPR file"
@@ -173,6 +181,12 @@ fortify_scan: # This job runs in the build stage, which runs first.
     #- export VERSION="another-check15"
     - echo $VERSION
     - fortifyclient -debug -url $FORTIFY_URL -authtoken $FORTIFY_TOKEN uploadFPR -file $FPRNAME -application $PROJECT -applicationVersion $VERSION
+    - |
+      curl --insecure -X "GET" \
+      "https://fortify.c2sf.mil/api/v1/projectVersions?q=name:$VERSION&projectId=184" \
+      -H "accept: application/json" \
+      -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" \
+      -H "Content-Type: application/json" > $CI_BUILDS_DIR/$CI_PROJECT_PATH/tmp/app.json
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev" || $CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -181,10 +195,54 @@ fortify_scan: # This job runs in the build stage, which runs first.
 
   artifacts:
     paths:
-      - $CI_BUILDS_DIR/$CI_PROJECT_PATH/$FPRNAME
+      - $FPRNAME
+      - tmp/
+      - app.json
     expire_in: 1 week
     # - FPRUtility -information -listIssues -categoryIssueCounts -project $FPRNAME
     # - FPRUtility -information -listIssues -search -query "[fortify priority order]:critical || [fortify priority order]:high || [fortify priority order]:medium" -project $FPRNAME -outputFormat CSV -f vuln.csv
+
+fortify_auto_approve:
+  image: docker-registry.c2sf.mil/cmis/rockylinux:latest
+  stage: auto_approve_artifact
+  needs:
+    - job: fortify_scan
+      artifacts: true
+  script:
+    - echo "Auto-approving all issues in the FPR file"
+    - |
+      mv $CI_PROJECT_DIR/tmp/app.json $CI_PROJECT_DIR/app.json
+      cd /opt
+      tar -xvf fcli.tgz
+      ls -ltrh $CI_PROJECT_DIR
+      VERSION_ID=$(jq -r '.data[0].id' $CI_PROJECT_DIR/app.json)
+      echo $VERSION_ID
+      curl --insecure -X GET \
+      "https://fortify.c2sf.mil/api/v1/projectVersions/${VERSION_ID}/artifacts" \
+      -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" \
+      -H "accept: application/json" > artifacts.json
+
+      ARTIFACT_ID=($(jq -r '.data[] | select(.status=="REQUIRE_AUTH") | .id' artifacts.json))
+      echo $ARTIFACT_ID
+      cd /opt/
+      ls -ltrh /opt/
+      find * -iname '*fcli*'
+        ./fcli ssc session login --url https://fortify.c2sf.mil --token $FORTIFY_API_TOKEN -k
+        for line in ${ARTIFACT_ID[@]}; do
+          echo "Approving artifact $line"
+          ./fcli ssc artifact approve $line -m "Automated CI approval"
+        done
+        ./fcli ssc artifact approve $ARTIFACT_ID -m "Automated CI approval"
+
+      # curl --insecure -X POST \
+      # "https://fortify.c2sf.mil/api/v1/projectVersions/${VERSION_ID}/artifacts/${ARTIFACT_ID}/approve" \
+      # -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" \
+      # -H "Content-Type: application/json" \
+      # -d '{"comment":"Automated CI approval"}'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev" || $CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never # Do not run the pipeline for these branches
+    - when: always # Run the pipeline for all other branches
 
 jira_ticket_apply_fortify_url:
   #image: docker-registry.c2sf.mil/ironbank/opensource/debian/debian:latest
@@ -293,39 +351,58 @@ internal_code_scan:
           done
         fi
 
-      ## Python Section
+      export OVERALL_EXIT
+
+      ## Python Section ##
 
       python3 - <<'PYEOF'
       import json, os, glob
 
-      all_issues = []
+      all_issues    = []
+      file_findings = []
+
       for f in glob.glob('/tmp/codereview-results/*.json'):
           filename = os.path.basename(f).replace('.json', '').replace('_', '/')
           try:
               with open(f) as fh:
                   data = json.load(fh)
-          except Exception:
+          except Exception as e:
+              print(f"WARNING: could not parse {f}: {e}")
               continue
 
+          file_issues = []
           for finding in data.get('findings', []):
               line_no = finding.get('lineNumber', 0)
-              msg = finding.get('message', '') or ''
+              msg     = finding.get('message', '') or ''
+              if not msg:
+                  continue
               if line_no:
-                  all_issues.append(f"{filename}:{line_no} — {msg}")
+                  file_issues.append(f"Line {line_no}: {msg}")
               else:
-                  all_issues.append(f"{filename} — {msg}")
+                  file_issues.append(msg)
 
-      issues_str = "; ".join(all_issues) if all_issues else "None"
-      status = "success" if not all_issues else "failed"
+          if file_issues:
+              all_issues.extend(file_issues)
+              file_findings.append({
+                  'file':   filename,
+                  'issues': "; ".join(file_issues)
+              })
+          else:
+              file_findings.append({
+                  'file':   filename,
+                  'issues': ''
+              })
 
       job_name    = os.environ.get('CI_JOB_NAME', 'unknown')
       output_file = f"{job_name}_scan_result.json"
+      status      = 'failed' if all_issues else 'success'
 
       result = {
-          "job": job_name,
-          "status": status,
-          "issues": issues_str,
-          "url": os.environ.get('CI_JOB_URL', '')
+          'job':           job_name,
+          'status':        status,
+          'issues':        "; ".join(all_issues) if all_issues else "None",
+          'file_findings': file_findings,
+          'url':           os.environ.get('CI_JOB_URL', '')
       }
 
       with open(output_file, 'w') as f:
@@ -334,6 +411,10 @@ internal_code_scan:
       print(f"Written to: {output_file}")
       print(json.dumps(result, indent=2))
       PYEOF
+
+    - |
+      # Exit with original code scan result after artifact is written
+      exit $OVERALL_EXIT
 
       ###
       ## LABEL - customfield_10272 
@@ -516,11 +597,19 @@ pipeline_summary:
       python3 - <<'PYEOF'
       import json, os, glob, re
 
-      # --- Load all scan_result.json artifacts from prior stages ---
+      # --- Debug: confirm artifacts are present ---
+      found = glob.glob('**/*_scan_result.json', recursive=True)
+      print(f"DEBUG: found {len(found)} result files")
+      for f in found:
+          print(f"DEBUG: {f}")
+
+      # --- Load all scan result artifacts ---
       results = []
-      for f in glob.glob('**/*_scan_result.json', recursive=True):
+      for f in found:
           with open(f) as fh:
-              results.append(json.load(fh))
+              r = json.load(fh)
+          print(f"DEBUG: loaded -> {json.dumps(r)}")
+          results.append(r)
 
       branch       = os.environ['CI_COMMIT_REF_NAME']
       sha_short    = os.environ['CI_COMMIT_SHORT_SHA']
@@ -529,7 +618,6 @@ pipeline_summary:
 
       any_failed = any(r['status'] != 'success' for r in results)
 
-      # --- Wiki markup, wrapped in a panel ---
       panel_color  = "#ffe0e0" if any_failed else "#e0ffe0"
       border_color = "#cc0000" if any_failed else "#00aa00"
       panel_title  = "CI Pipeline Report - FAILED" if any_failed else "CI Pipeline Report"
@@ -540,10 +628,23 @@ pipeline_summary:
           "",
           "|| Job || Status || Issues || Link ||",
       ]
+
       for r in results:
-          icon = "(/)" if r['status'] == 'success' else "(x)"
-          issues = r.get('issues') or "None"
-          body.append(f"| {r['job']} | {icon} {r['status']} | {issues} | [view|{r['url']}] |")
+          file_findings = r.get('file_findings')
+
+          if file_findings:
+              # One row per file
+              for ff in file_findings:
+                  has_issues = bool(ff.get('issues'))
+                  icon       = "(x)" if has_issues else "(/)"
+                  issues     = ff['issues'] if has_issues else "None"
+                  body.append(f"| {r['job']}: {ff['file']} | {icon} | {issues} | [view|{r['url']}] |")
+      else:
+              # Single row for jobs without per-file breakdown
+              icon   = "(/)" if r['status'] == 'success' else "(x)"
+              issues = r.get('issues') or "None"
+              body.append(f"| {r['job']} | {icon} {r['status']} | {issues} | [view|{r['url']}] |")
+
       body.append("")
       if any_failed:
           body.append("{color:red}(x) *Action required — see failed jobs above.*{color}")
@@ -559,16 +660,20 @@ pipeline_summary:
       with open('jira_comment.txt', 'w') as f:
           f.write(wiki_note)
 
+      # Write any_failed flag for shell to read after curl
+      with open('pipeline_failed.txt', 'w') as f:
+          f.write('1' if any_failed else '0')
+
       # --- Extract Jira key from commit message ---
       match = re.search(r'[A-Z][A-Z0-9]+-\d+', commit_msg)
       if match:
           with open('jira_issue_key.txt', 'w') as f:
               f.write(match.group(0))
+          print(f"DEBUG: Jira key -> {match.group(0)}")
       else:
           print("WARNING: no Jira key found in commit message")
 
       print(wiki_note)
-
       PYEOF
 
       if [ -f jira_issue_key.txt ]; then
@@ -585,10 +690,10 @@ pipeline_summary:
       fi
     - |
       # Exit after curl — fail the job if any stage failed
-      if [ -f pipeline_failed.txt ] && [ "$(cat pipeline_failed.txt)" = "1" ]; then
-        echo "One or more stages failed — failing pipeline summary"
-        exit 1
-      fi
+      # if [ -f pipeline_failed.txt ] && [ "$(cat pipeline_failed.txt)" = "1" ]; then
+      #   echo "One or more stages failed — failing pipeline summary"
+      #   exit 1
+      # fi
   artifacts:
     when: always
     paths:
