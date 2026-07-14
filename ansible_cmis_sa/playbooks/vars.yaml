@@ -1,0 +1,4 @@
+---
+# vars.yml
+
+machine_agent_user: appdynamics-machine-agent

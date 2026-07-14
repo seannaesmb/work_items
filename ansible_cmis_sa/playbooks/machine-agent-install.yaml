@@ -1,0 +1,69 @@
+---
+- name: Install AppDynamics Machine Agent
+  hosts: localhost
+  vars:
+    machine_agent_install_dir: /opt/appdynamics
+    machine_agent_user: appdynamics-machine-agent
+  tasks:
+    - name: User account creation
+      ansible.builtin.user:
+        name: "{{ machine_agent_user }}"
+        system: true
+        create_home: false
+
+    - name: Group account creation
+      ansible.builtin.group:
+        name: "{{ machine_agent_user }}"
+        state: present
+
+    - name: Create machine agent directory if it does not exist
+      ansible.builtin.file:
+        path: "{{ machine_agent_install_dir }}/machine-agent"
+        state: directory
+        mode: "0755"
+        owner: "{{ machine_agent_user }}"
+        group: "{{ machine_agent_user }}"
+
+    - name: Copy machine agent file
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/files/machine-agent-linux.zip"
+        dest: "{{ machine_agent_install_dir }}/machine-agent-linux.zip"
+        owner: "{{ machine_agent_user }}"
+        group: "{{ machine_agent_user }}"
+        mode: "0644"
+
+    - name: Find directories in machine agent install dir
+      ansible.builtin.find:
+        paths: "{{ machine_agent_install_dir }}"
+        file_type: directory
+        patterns: "machine-agent"
+      register: machine_agent_dirs
+
+    - name: Remove existing machine agent directory if it exists
+      community.general.archive:
+        path: "{{ item.path }}"
+        dest: "{{ machine_agent_install_dir }}/machine-agent-{{ ansible_facts['date_time']['iso8601_basic_short'] }}.zip"
+        format: zip
+        mode: "0644"
+      loop: "{{ machine_agent_dirs.files }}"
+      when: machine_agent_dirs.matched > 0
+
+    - name: Unzip machine agent
+      ansible.builtin.unarchive:
+        src: "{{ machine_agent_install_dir }}/machine-agent-linux.zip"
+        dest: "{{ machine_agent_install_dir }}/machine-agent"
+        remote_src: true
+        owner: "{{ machine_agent_user }}"
+        group: "{{ machine_agent_user }}"
+
+    - name: Remove jre and symlink jre
+      ansible.builtin.file:
+        path: "{{ machine_agent_install_dir }}/machine-agent/jre"
+        state: absent
+        mode: "0755"
+
+    - name: Add symlink jre
+      ansible.builtin.file:
+        src: "/usr/lib/jvm/java-17-openjdk/"
+        dest: "{{ machine_agent_install_dir }}/machine-agent/jre"
+        state: link
