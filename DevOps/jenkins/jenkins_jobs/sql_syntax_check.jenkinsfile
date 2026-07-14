@@ -5,14 +5,13 @@ pipeline {
           environment {
             DEV_REMOTE = 'cmis_dev_7e'
             TEST_REMOTE = 'cmis_test_7i'
-            DEV_REMOTE_URL = 'ssh://svc_jenkins_d$@cship.host.name:/mnt/local/repo/cmis'  // Replace
-            TEST_REMOTE_URL = 'ssh://svc_jenkins_d$@cship.host.name:/mnt/local/repo/cmis'  // Replace
-            GIT_CREDENTIALS_ID = 'C2SF-jenkins-ssh-cship'
+            DEV_REMOTE_URL = 'ssh://svc_jenkins_d$@utincsmc7e.cloud.disa.mil:/mnt/local/repo/cmis'  // Replace
+            TEST_REMOTE_URL = 'ssh://svc_jenkins_d$@utincsmc7i.cloud.disa.mil:/mnt/local/repo/cmis'  // Replace
+            GIT_CREDENTIALS_ID = 'C2SF-jenkins-ssh-utincsmc7e'
             MR_IID           = "${env.gitlabMergeRequestIid}"
             PROJECT_ID       = "${env.gitlabMergeRequestTargetProjectId}"
             jiraKey = ''
             REMOTE_WORKDIR = "/cygdrive/d/jenkins/workspace/${JOB_NAME}"
-
         }
 
 
@@ -30,8 +29,9 @@ pipeline {
         script {
           def files = sh(
             script: """
-            //   git diff --name-only origin/${env.gitlabSourceBranch}...HEAD | grep '\\.sql' || true
-                  git diff --name-only origin/gerrit-generated-dev...HEAD | grep '\\.sql' || true
+             //  git diff --name-only origin/${env.gitlabSourceBranch}...HEAD | grep '\\.sql' || true
+            //      git diff --name-only origin/gerrit-generated-dev...HEAD | grep '\\.sql' || true
+                git show --pretty=format: --name-only | grep '\\.sql' || true
 
             """,
             returnStdout: true
@@ -52,13 +52,15 @@ pipeline {
                 }
             }
                      steps {
-                sshagent(credentials: ['C2SF-jenkins-ssh-cship']) {
+                sshagent(credentials: ['C2SF-jenkins-ssh-utincsmc7e']) {
+
                     script {
                         def results = ""
                         def anyFailed = false
                         def sshUser = 'svc_jenkins_d$'
-                        def sshHost = 'sql.host.name'
+                        def sshHost = 'utincsmc7d.cloud.disa.mil'
                         def sshUserEscaped = sshUser.replace('$', '\\$')
+
                         script: """
 
                         ssh -o StrictHostKeyChecking=no "${sshUserEscaped}@${sshHost}"\
@@ -66,10 +68,11 @@ pipeline {
                         ls -ltrh
                         
                         """
-                        
                 
+
                         env.SQL_FILES.split("\n").each { file ->
                             def outFile = "${env.WORKSPACE}/.sql_out_${file.tokenize('/').last()}"
+
                             def status = sh(
                                     script: """
                                     echo \"Connecting as: ${sshUserEscaped}@${sshHost}\"
@@ -104,27 +107,33 @@ pipeline {
     }
    
         post {
-            success { 
-                script {
-                    def jiraKey = sh(script: "git log -1 --pretty=%B | grep -oE '[A-Z]{2,}-[0-9]+' | head -1 || true", returnStdout: true).trim()
-                    def sqlStatus = sh(script: "echo \"${env.SQL_CHECK_STATUS}\" || true", returnStdout: true).trim()
-                    def sqlOutput = sh(script: "echo \"${env.SQL_CHECK_OUTPUT}\" || true", returnStdout: true).trim()
+    success {
+        script {
+            def jiraKey = sh(
+                script: "git log -1 --pretty=%B | grep -oE '[A-Z]{2,}-[0-9]+' | head -1 || true",
+                returnStdout: true
+            ).trim()
 
-                    echo "$sqlStatus"
-                    if (!jiraKey) {
-                        jiraKey = sh(script: "git log -1 --pretty=%B | grep -oE '[A-Z]{2,}-[0-9]+' | head -1 || true", returnStdout: true).trim()
-                    }
+            def sqlStatus = env.SQL_CHECK_STATUS ?: ''
+            def sqlOutput = env.SQL_CHECK_OUTPUT ?: ''
+            def commitUrl = "${env.gitlabSourceRepoHomepage}/-/commit/${env.gitlabAfter}"
 
-                    if (jiraKey) {
-                      sh "echo $jiraKey"
-                       jiraComment body: "Latest change has been pushed to ${env.CURRENT_STAGE} Environment \nURL: ${env.BUILD_URL}.", issueKey: "$jiraKey"
-                      jiraComment body: "SQL run info below $sqlOutput ", issueKey: "$jiraKey"
 
-                    }
-                     else {
-                        echo "No JIRA ticket found in branch name or latest commit message."
-                    } } }
-            failure { echo "Push failed" }
+            if (jiraKey) {
+                if (sqlStatus?.trim() && env.SQL_FILES?.trim()) {
+                    jiraComment body: "Latest change has been pushed to ${env.CURRENT_STAGE} Environment \nURL: ${env.BUILD_URL}.", issueKey: jiraKey
+                    jiraComment body: "SQL run info below: ${sqlOutput}", issueKey: jiraKey
+                } else {
+                    jiraComment body: "No sql scripts in current commit\nCommit: ${commitUrl}", issueKey: jiraKey
+                }
+            } else {
+                echo "No JIRA ticket found in branch name or latest commit message."
+            }
+        }
+    }
+    failure {
+        echo "Push failed"
+    }
             always {
                 emailext(
                 subject: "${currentBuild.currentResult}: ${env.JOB_NAME} ${env.BUILD_NUMBER}",
