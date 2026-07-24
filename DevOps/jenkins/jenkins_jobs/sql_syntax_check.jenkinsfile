@@ -42,69 +42,96 @@ pipeline {
                 }          
          }
      }
-        stage('Validate sql file remotely') {
-            when {
-                allOf {
-                    // expression { env.gitlabAction == 'close' || env.gitlabAction == 'merge' }
-                    // expression { env.gitlabSourceBranch == 'gerrit-generated-dev' }
-                    expression { env.SQL_FILES != '' }
-
-                }
-            }
-                     steps {
-                sshagent(credentials: ['C2SF-jenkins-ssh-utincsmc7e']) {
-
-                    script {
-                        def results = ""
-                        def anyFailed = false
-                        def sshUser = 'svc_jenkins_d$'
-                        def sshHost = 'utincsmc7d.cloud.disa.mil'
-                        def sshUserEscaped = sshUser.replace('$', '\\$')
-
-                        script: """
-
-                        ssh -o StrictHostKeyChecking=no "${sshUserEscaped}@${sshHost}"\
-                        "WORKDIR="${REMOTE_WORKDIR}"\
-                        ls -ltrh
-                        
-                        """
-                
-
-                        env.SQL_FILES.split("\n").each { file ->
-                            def outFile = "${env.WORKSPACE}/.sql_out_${file.tokenize('/').last()}"
-
-                            def status = sh(
-                                    script: """
-                                    echo \"Connecting as: ${sshUserEscaped}@${sshHost}\"
-                                    ssh -o StrictHostKeyChecking=no "${sshUserEscaped}@${sshHost}" \
-                                        "hostname" \
-                                        2>&1 | tee "${outFile}"
-                                    exit \${PIPESTATUS[0]}
-                                """,
-                                // script: """
-                                //     ssh -o StrictHostKeyChecking=no user@sql-host \
-                                //         "sqlcmd -S your_server -d your_db -i ${file} -b" \
-                                //         2>&1 | tee "${outFile}"
-                                //     exit \${PIPESTATUS[0]}
-                                // """,
-                                returnStatus: true
-                            )
-                
-                            def output = fileExists(outFile) ? readFile(outFile).trim() : '(no output)'
-                            def label  = status == 0 ? '✅' : '❌'
-                            results   += "\n${label} --- ${file} ---\n${output}\n"
-                
-                            if (status != 0) anyFailed = true
-                        }
-                
-                        env.SQL_CHECK_OUTPUT = results
-                        env.SQL_CHECK_EXIT   = anyFailed ? '1' : '0'
-                        env.SQL_CHECK_STATUS = anyFailed ? 'failed' : 'passed'
-                    }
-                }
-                     }
-        }
+   stage('Validate sql file remotely') {
+    when {
+        expression { env.SQL_FILES != '' }
     }
+    steps {
+        sshagent(credentials: ['C2SF-jenkins-ssh-utincsmc7e']) {
+            script {
+                def results = ""
+                def anyFailed = false
+                def sshUser = 'svc_jenkins_d$'
+                def sshHost = 'utincsmc7d.cloud.disa.mil'
+                def sshUserEscaped = sshUser.replace('$', '\\$')
+                def remoteWorkdir = "/home/${sshUser}/sql_check_${env.BUILD_NUMBER}"
+                def localStagingDir = "${env.WORKSPACE}/.sql_staging"
+
+                def fileList = env.SQL_FILES.split("\n")   // <-- defined here
+                // Stage files into one local dir so rsync can push them in a single pass
+                sh "rm -rf ${localStagingDir} && mkdir -p ${localStagingDir}"
+                fileList.each { file ->
+                    def fname = file.tokenize('/').last()
+                    def runScript = "${localStagingDir}/run_check.sh"
+                
+                    def stagedFile = "${localStagingDir}/${fname}"
+                    // Prepend syntax-only guards so sqlcmd parses without executing or requiring live data
+                    sh """
+                        printf 'SET NOEXEC ON;\\nSET FMTONLY ON;\\n' > '${stagedFile}'
+                        cat '${file}' >> '${stagedFile}'
+                    """
+                        sh """
+                        printf '%s\\n' \\
+                        '#!/bin/bash' \\
+                        'WINPATH=\$(cygpath -w "\$1")' \\
+                        'sqlcmd -i "\$WINPATH" -b' \\
+                        > '${runScript}'
+                         chmod +x '${runScript}'
+                         """
+                            // cat "${env.WORKSPACE}/.sql_staging/run_check_test-sql-jenkins-c2sf.sql.sh"
+                }
+                
+                                    // Write a tiny remote-side script instead of inlining the ssh command
+
+                
+                
+
+                sh "ssh -o StrictHostKeyChecking=no ${sshUserEscaped}@${sshHost} 'mkdir -p ${remoteWorkdir}'"
+
+                // Single rsync push of all staged files — delta-aware, and --delete keeps stale remote files out
+                sh """
+                    rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" \
+                        ${localStagingDir}/ ${sshUserEscaped}@${sshHost}:${remoteWorkdir}/
+                """
+
+                fileList.each { file ->
+                    def fname = file.tokenize('/').last()
+                    def outFile = "${env.WORKSPACE}/.sql_out_${fname}"
+                    sh "printf '%s' 'ssh -o StrictHostKeyChecking=no ${sshUserEscaped}@${sshHost} \"sqlcmd -b -i ${remoteWorkdir}/${fname}\"' | cat -A"
+                    // sh "ls -l ${remoteWorkdir}"
+                    def status =  sh(
+                        // script: "ssh -o StrictHostKeyChecking=no ${sshUserEscaped}@${sshHost} 'find ~/;sqlcmd -b -i \"${remoteWorkdir}/${fname}\"' 2>&1 | tee \"${outFile}\"; exit \${PIPESTATUS[0]}",
+                        script: """
+                        ssh -o StrictHostKeyChecking=no ${sshUserEscaped}@${sshHost} "bash ${remoteWorkdir}/run_check.sh '${remoteWorkdir}/${fname}'" 2>&1 | tee "${outFile}"
+                        exit \${PIPESTATUS[0]}
+                        """,
+                                            
+                        returnStatus: true
+                    )
+
+                    def output = fileExists(outFile) ? readFile(outFile).trim() : '(no output)'
+                    def label  = status == 0 ? '✅ PASSED' : '❌ FAILED'
+                    results   += """
+                    ${'='.multiply(60)}
+                    ${label} — ${file}
+                    ${'-'.multiply(60)}
+                    ${output}
+                    """.stripIndent()
+
+                    if (status != 0) anyFailed = true
+                }
+
+                sh "ssh -o StrictHostKeyChecking=no ${sshUserEscaped}@${sshHost} 'rm -rf ${remoteWorkdir}'"
+                sh "rm -rf ${localStagingDir}"
+
+                env.SQL_CHECK_OUTPUT = results
+                env.SQL_CHECK_EXIT   = anyFailed ? '1' : '0'
+                env.SQL_CHECK_STATUS = anyFailed ? 'failed' : 'passed'
+             }
+         }
+     }
+   }
+  }
    
         post {
     success {
@@ -121,7 +148,7 @@ pipeline {
 
             if (jiraKey) {
                 if (sqlStatus?.trim() && env.SQL_FILES?.trim()) {
-                    jiraComment body: "Latest change has been pushed to ${env.CURRENT_STAGE} Environment \nURL: ${env.BUILD_URL}.", issueKey: jiraKey
+                    // jiraComment body: "Latest change has been pushed to ${env.CURRENT_STAGE} Environment \nURL: ${env.BUILD_URL}.", issueKey: jiraKey
                     jiraComment body: "SQL run info below: ${sqlOutput}", issueKey: jiraKey
                 } else {
                     jiraComment body: "No sql scripts in current commit\nCommit: ${commitUrl}", issueKey: jiraKey
