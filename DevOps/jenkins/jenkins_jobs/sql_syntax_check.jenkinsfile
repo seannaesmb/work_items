@@ -27,18 +27,26 @@ pipeline {
      stage('Find changed SQL') {
       steps {
         script {
-          def files = sh(
-            script: """
-             //  git diff --name-only origin/${env.gitlabSourceBranch}...HEAD | grep '\\.sql' || true
-            //      git diff --name-only origin/gerrit-generated-dev...HEAD | grep '\\.sql' || true
-                git show --pretty=format: --name-only | grep '\\.sql' || true
 
-            """,
-            returnStdout: true
-          ).trim()
+             def beforeSha = env.gitlabBefore
+            def afterSha  = env.gitlabAfter
+            
+            def sqlFiles = ''
+            if (beforeSha?.trim() && beforeSha != '0000000000000000000000000000000000000000') {
+                sqlFiles = sh(
+                    script: "git diff --name-only ${beforeSha}..${afterSha} | grep '\\.sql\$' || true",
+                    returnStdout: true
+                ).trim()
+            } else {
+                // New branch / first push on this branch — no meaningful "before" SHA to diff against
+                sqlFiles = sh(
+                    script: "git show --pretty=format: --name-only ${afterSha} | grep '\\.sql\$' || true",
+                    returnStdout: true
+                ).trim()
+            }
 
-          env.SQL_FILES = files
-          echo "SQL files:\n${files}"
+          env.SQL_FILES = sqlFiles
+          echo "SQL files:\n${sqlFiles}"
                 }          
          }
      }
