@@ -224,6 +224,11 @@ fortify_auto_approve:
 
       ARTIFACT_ID=($(jq -r '.data[] | select(.status=="REQUIRE_AUTH") | .id' artifacts.json))
       echo $ARTIFACT_ID
+            if [[ ${#ARTIFACT_ID[@]} -eq 0 ]]; then
+        echo "No artifacts needing Approval"
+        exit 0
+      fi
+
       cd /opt/
       ls -ltrh /opt/
       find * -iname '*fcli*'
