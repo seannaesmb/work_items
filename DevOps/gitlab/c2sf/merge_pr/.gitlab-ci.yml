@@ -180,14 +180,16 @@ fortify_scan: # This job runs in the build stage, which runs first.
     - export file_count=0
     - |
       if [ "$CI_COMMIT_BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
-        # First push to branch — only HEAD's own changes are safe to inspect
-        file_count=($(git show --pretty="format:" --name-only HEAD | sort -u))
+          mapfile -t file_count < <(
+              git show --pretty="format:" --name-only HEAD | sort -u
+          )
       else
-        # Diff the full range so multiple commits in one push are all captured
-         file_count=($(git diff --name-only ${CI_COMMIT_BEFORE_SHA}..${CI_COMMIT_SHA} | sort -u))
+          mapfile -t file_count < <(
+              git diff --name-only "${CI_COMMIT_BEFORE_SHA}..${CI_COMMIT_SHA}" | sort -u
+          )
       fi
 
-      echo $file_count
+      echo "$file_count"
       # file_count=(`git show --pretty="format:" --name-only`)
 
     - |
@@ -197,8 +199,8 @@ fortify_scan: # This job runs in the build stage, which runs first.
         # echo "in else --"
         echo ${#file_count[*]}
         echo " Post file count"
-        for line in ${file_count[@]}; do
-              if [[ ${#file_count[*]} -gt "1" ]]; then 
+        for line in "${file_count[@]}"; do
+              if [[ "${#file_count[*]}" -gt "1" ]]; then 
 
                 files_to_scan+="$line " 
               else
