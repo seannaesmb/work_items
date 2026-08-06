@@ -57,7 +57,18 @@ fortify_version_create:
         VERSION=$MR_ID
         fi
 
-      curl --insecure -X 'POST'  "https://fortify.c2sf.mil/api/v1/projectVersions"   -H "accept: application/json"   -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}"   -H "Content-Type: application/json"   -d '{ "name" : "'"$VERSION"'" , "active" : true, "committed": false, "project" : { "id" : "184" }, "issueTemplateId": "Prioritized-HighRisk-Project-Template" }' > version_create.json
+      # curl --insecure -X 'POST'  "https://fortify.c2sf.mil/api/v1/projectVersions"   -H "accept: application/json"   -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}"   -H "Content-Type: application/json"   -d '{ "name" : "'"$VERSION"'" , "active" : true, "committed": false, "project" : { "id" : "184" }, "issueTemplateId": "Prioritized-HighRisk-Project-Template" }' > version_create.json 
+                        curl --insecure -X 'POST' 'https://fortify.c2sf.mil/api/v1/projectVersions' \
+        -H 'accept: application/json' \
+        -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" \
+        -H 'Content-Type: application/json' \
+        -d '{
+          "name": "'"$VERSION"'",
+          "active": true,
+          "committed": false,
+          "project": { "id": 184 },
+          "issueTemplateId": "Prioritized-HighRisk-Project-Template"
+        }' > version_create.json
     - |
       curl --insecure -X "GET" "https://fortify.c2sf.mil/api/v1/projectVersions?q=name:$VERSION&projectId=184" -H "accept: application/json" -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" -H "Content-Type: application/json" > app.json
     - |
@@ -73,7 +84,33 @@ fortify_version_create:
 
         if [[ $(cat app.json | jq .count) -eq "0" ]]; then
             echo "Creating new version"
-            curl --insecure -X 'POST'   'https://fortify.c2sf.mil/api/v1/projectVersions'   -H 'accept: application/json'   -H 'Authorization: FortifyToken ${FORTIFY_API_TOKEN}'   -H 'Content-Type: application/json'   -d '{ "name" : "'"$VERSION"'" , "active" : true, "committed": false, "project" : { "id" : 184 }, "issueTemplateId": "Prioritized-HighRisk-Project-Template" }' > version_create.json
+            # curl --insecure -X 'POST'   'https://fortify.c2sf.mil/api/v1/projectVersions'   -H 'accept: application/json'   -H 'Authorization: FortifyToken ${FORTIFY_API_TOKEN}'   -H 'Content-Type: application/json'   -d '{ "name" : "'"$VERSION"'" , "active" : true, "committed": false, "project" : { "id" : 184 }, "issueTemplateId": "Prioritized-HighRisk-Project-Template","attributeDefinitionId": "Development Phase","values": [{"value": "New"}] }' > version_create.json
+                  curl --insecure -X 'POST' 'https://fortify.c2sf.mil/api/v1/projectVersions' \
+        -H 'accept: application/json' \
+        -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" \
+        -H 'Content-Type: application/json' \
+        -d '{
+          "name": "'"$VERSION"'",
+          "active": true,
+          "committed": false,
+          "project": { "id": 184 },
+          "issueTemplateId": "Prioritized-HighRisk-Project-Template"
+        }' > version_create.json
+          # Extract the new version's ID from the create response
+            numerical_id=$( jq -r '.data.id' version_create.json )
+
+        curl --insecure -X 'PUT' "https://fortify.c2sf.mil/api/v1/projectVersions/${numerical_id}/attributes" \
+          -H 'accept: application/json' \
+          -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" \
+          -H 'Content-Type: application/json' \
+          -d '[
+            {
+              "attributeDefinitionId": "Development Phase",
+              "values": [{"value": "New"}]
+            }
+          ]'
+
+
               cat version_create.json
 
 
@@ -82,12 +119,13 @@ fortify_version_create:
           echo "Outputing info"
         if [[ -f version_create.json ]]; then
 
-          if [[ "$( cat version_create.json | jq -c '.responseCode' )" -eq "201" && "$( cat version_create.json | jq -c '.data.name' | tr -d '"' )" -eq $VERSION ]]; then
+          if [[ "$( cat version_create.json | jq -c '.responseCode' )" -eq "201" && "$( cat version_create.json | jq -c '.data.name' | tr -d '"' )" == "$VERSION" ]]; then
+            cat version_create.json | jq '.'
             echo "Success on creation"
             echo "Name of version:" $( jq -c ".data.name" version_create.json)
             echo "Response code:" $( jq -c ".responseCode" version_create.json)
-            id_creation=$( jq -c ".data.name" version_create.json)
-            numerical_id=$( jq -c ".data[0].id" version_create.json)
+            id_creation=$( jq -c ".data.id" version_create.json)
+            numerical_id=$( jq -c ".data.id" version_create.json)
           
           elif [[ "$( cat version_create.json | jq -c '.responseCode' )" -eq "400" && "$( cat version_create.json | jq -c '.message' )" =~ "duplicate name" ]]; then
             echo "Version found will use and update"
@@ -98,12 +136,14 @@ fortify_version_create:
         echo "almost done"
 
        echo "Adding new attributes to version"
-       curl --insecure -X PUT "https://fortify.c2sf.mil/api/v1/projectVersions/$numerical_id/attributes" -H "Authorization: FortifyToken $FORTIFY_API_TOKEN" -H "Content-Type: application/json" -H "accept: application/json" -d '[{"attributeDefinitionId": 5, "values": [{"guid": "Active"}], "value": null},{"attributeDefinitionId": 6, "values": [{"guid": "Internal"}], "value": null},{"attributeDefinitionId": 7, "values": [{"guid": "internalnetwork"}], "value": null}]'
+       echo "################################"
+       curl --insecure -X PUT "https://fortify.c2sf.mil/api/v1/projectVersions/$id_creation/attributes" -H "Authorization: FortifyToken $FORTIFY_API_TOKEN" -H "Content-Type: application/json" -H "accept: application/json" -d '[{"attributeDefinitionId": 5, "values": [{"guid": "Active"}], "value": null},{"attributeDefinitionId": 6, "values": [{"guid": "Internal"}], "value": null},{"attributeDefinitionId": 7, "values": [{"guid": "internalnetwork"}], "value": null}]'
+       echo "################################"
 
-
-        echo "Committing $id_creation"
+        echo "##########################"
+        echo "Committing $numerical_id"
         curl --insecure -X "PUT" "https://fortify.c2sf.mil/api/v1/projectVersions/$id_creation" -H "accept: application/json" -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" -H "Content-Type: application/json" -d '{ "committed" : true }' | jq
-
+        echo "##########################"  
         exit 0
   rules:
     - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"'
@@ -224,7 +264,7 @@ fortify_auto_approve:
 
       ARTIFACT_ID=($(jq -r '.data[] | select(.status=="REQUIRE_AUTH") | .id' artifacts.json))
       echo $ARTIFACT_ID
-            if [[ ${#ARTIFACT_ID[@]} -eq 0 ]]; then
+      if [[ ${#ARTIFACT_ID[@]} -eq 0 ]]; then
         echo "No artifacts needing Approval"
         exit 0
       fi
