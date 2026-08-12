@@ -18,7 +18,16 @@
 default:
   image: docker-registry.c2sf.mil/cmis/rockylinux:latest
 
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TITLE =~ /^Revert "/ || $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^revert-/)'
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "test-gerrit-generate-dev" && $CI_COMMIT_TITLE =~ /^Merge branch/'
+      when: never
+    - when: always
+
 stages: # List of stages for jobs, and their order of execution
+  - merge_commit_creation
   - fortify_version_create
   - scan
   - auto_approve_artifact
@@ -38,6 +47,16 @@ variables:
   VERSION: $CI_COMMIT_REF_NAME
   FF_SCRIPT_SECTIONS: "true"
   AST_ENABLE_MR_PIPELINES: "true"
+
+merge_creation:
+  stage: merge_commit_creation
+  script:
+    - |
+      MR_TITLE="${CI_COMMIT_REF_NAME} into test-gerrit-generated-dev"
+      curl --insecure -X POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --header "Content-Type: application/json" --data '{"source_branch":   "'"${CI_COMMIT_REF_NAME}"'","target_branch": "test-gerrit-generate-dev","title": "'"${MR_TITLE}"'","squash": true,"remove_source_branch": false}' "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
 
 fortify_version_create:
   image: docker-registry.c2sf.mil/cmis/rockylinux:latest
@@ -146,8 +165,11 @@ fortify_version_create:
         echo "##########################"  
         exit 0
   rules:
-    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "development"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"|| $CI_PIPELINE_SOURCE == "merge_request_event"'
       when: never # Do not run the pipeline for these branches
+
     - when: always # Run the pipeline for all other branches
 
   artifacts:
@@ -200,7 +222,7 @@ fortify_scan: # This job runs in the build stage, which runs first.
         echo ${#file_count[*]}
         echo " Post file count"
         for line in "${file_count[@]}"; do
-              if [[ "${#file_count[*]}" -gt "1" ]]; then 
+              if [[ ${#file_count[*]} -gt "1" ]]; then 
 
                 files_to_scan+="$line " 
               else
@@ -231,8 +253,11 @@ fortify_scan: # This job runs in the build stage, which runs first.
       -H "Content-Type: application/json" > $CI_BUILDS_DIR/$CI_PROJECT_PATH/tmp/app.json
 
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "development"'
+      when: always
     - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev" || $CI_PIPELINE_SOURCE == "merge_request_event"'
       when: never # Do not run the pipeline for these branches
+
     - when: always # Run the pipeline for all other branches
 
   artifacts:
@@ -287,8 +312,12 @@ fortify_auto_approve:
       # -H "Content-Type: application/json" \
       # -d '{"comment":"Automated CI approval"}'
   rules:
-    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev" || $CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "development"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"'
       when: never # Do not run the pipeline for these branches
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
     - when: always # Run the pipeline for all other branches
 
 jira_ticket_apply_fortify_url:
@@ -600,7 +629,9 @@ fortify_scan_merge_request:
       rm -f "$TEMP_FILE"
 
   rules:
-    - if: $CI_MERGE_REQUEST_ID
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^check-development/)'
+      when: always
+
   artifacts:
     paths:
       - $CI_BUILDS_DIR/$CI_PROJECT_PATH/$CI_MERGE_REQUEST_ID.fpr
@@ -741,8 +772,10 @@ pipeline_summary:
       #   echo "One or more stages failed — failing pipeline summary"
       #   exit 1
       # fi
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
   artifacts:
-    when: always
     paths:
       - jira_comment.txt
       - jira_issue_key.txt
