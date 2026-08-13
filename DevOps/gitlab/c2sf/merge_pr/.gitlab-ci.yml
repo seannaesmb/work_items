@@ -53,7 +53,18 @@ merge_creation:
   script:
     - |
       MR_TITLE="${CI_COMMIT_REF_NAME} into test-gerrit-generated-dev"
-      curl --insecure -X POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --header "Content-Type: application/json" --data '{"source_branch":   "'"${CI_COMMIT_REF_NAME}"'","target_branch": "test-gerrit-generate-dev","title": "'"${MR_TITLE}"'","squash": true,"remove_source_branch": false}' "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests"
+
+      MR_IID=$(curl --insecure --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests?source_branch=${CI_COMMIT_REF_NAME}&state=opened"| jq -r '.[0].iid')
+      echo "MERGE IID ${MR_IID}"
+      if [ -z "$MR_IID" ] || [ "$MR_IID" == "null" ]; then
+        echo "IN IF STATEMENT ---"
+      curl --insecure -X POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --header "Content-Type: application/json" --data '{"source_branch":   "'"${CI_COMMIT_REF_NAME}"'","target_branch": "test-gerrit-generate-dev","title": "'"${MR_TITLE}"'","squash": true}' "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests"
+      echo "IN ELSE STATEMENT"
+      fi
+      MR_IID=$(curl --insecure --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests?source_branch=${CI_COMMIT_REF_NAME}&state=opened"| jq -r '.[0].iid')
+
+      curl --insecure -X PUT --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --header "Content-Type: application/json" --data '{"auto_merge": true}' "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests/${MR_IID}/merge"
+
   rules:
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
       when: always
@@ -61,6 +72,8 @@ merge_creation:
 fortify_version_create:
   image: docker-registry.c2sf.mil/cmis/rockylinux:latest
   stage: fortify_version_create
+  needs: [] # <-- no dependency on fortify_version_create, starts immediately
+
   before_script:
     - mkdir -p $HOME/.docker
     - echo $DOCKER_AUTH_CONFIG > $HOME/.docker/config.json
@@ -182,6 +195,8 @@ fortify_scan: # This job runs in the build stage, which runs first.
   image: docker-registry.c2sf.mil/factory/fortify-sca:latest
 
   stage: scan
+  needs: [] # <-- no dependency on fortify_version_create, starts immediately
+
   before_script:
     - curl -sSL -o $CI_BUILDS_DIR/$CI_PROJECT_PATH/fcli.tgz https://github.com/fortify/fcli/releases/download/latest/fcli-linux.tgz
     - tar -xzf $CI_BUILDS_DIR/$CI_PROJECT_PATH/fcli.tgz -C $CI_BUILDS_DIR/$CI_PROJECT_PATH/
