@@ -52,7 +52,7 @@ merge_creation:
   stage: merge_commit_creation
   script:
     - |
-      MR_TITLE="${CI_COMMIT_REF_NAME} into test-gerrit-generated-dev"
+      MR_TITLE="${CI_COMMIT_REF_NAME}"
 
       MR_IID=$(curl --insecure --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests?source_branch=${CI_COMMIT_REF_NAME}&state=opened"| jq -r '.[0].iid')
       echo "MERGE IID ${MR_IID}"
@@ -209,7 +209,6 @@ fortify_scan: # This job runs in the build stage, which runs first.
     # - sudo cp local-ca.crt /usr/local/share/ca-certificates
     # - sudo update-ca-certificates
 
-    - fortifyupdate
     - echo "Analyzing all files"
     - echo $CI_BUILDS_DIR
     - echo "Getting files to scan"
