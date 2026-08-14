@@ -20,16 +20,16 @@ default:
 
 workflow:
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TITLE =~ /^Revert "/ || $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^revert-/)'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TITLE =~ /^Revert "/ || $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^revert-/) || $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_TITLE =~ /^Merge\s+[bB]ranch/ || $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^\S+generated\S+$/ || $CI_COMMIT_TITLE =~ /^Merge\s+\S+\sinto/ '
       when: never
-    - if: '$CI_COMMIT_BRANCH == "test-gerrit-generate-dev" && $CI_COMMIT_TITLE =~ /^Merge branch/'
-      when: never
+    # - if: '$CI_COMMIT_BRANCH == "test-gerrit-generate-dev" && $CI_COMMIT_TITLE =~ /^Merge\s+[bB]ranch/'
+    # - if: '$CI_COMMIT_TITLE =~ /^Merge\s+[bB]ranch/'
+    # - if: '$CI_COMMIT_BRANCH == "test-gerrit-generate-dev" && $CI_COMMIT_TITLE =~ /^Merge/'
     - when: always
 
 stages: # List of stages for jobs, and their order of execution
   - merge_commit_creation
-  - fortify_version_create
-  - scan
+  - fortify
   - auto_approve_artifact
   - jira_ticket_link_apply
   - security
@@ -52,7 +52,7 @@ merge_creation:
   stage: merge_commit_creation
   script:
     - |
-      MR_TITLE="${CI_COMMIT_REF_NAME}"
+      MR_TITLE="${CI_COMMIT_REF_NAME}" 
 
       MR_IID=$(curl --insecure --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests?source_branch=${CI_COMMIT_REF_NAME}&state=opened"| jq -r '.[0].iid')
       echo "MERGE IID ${MR_IID}"
@@ -71,7 +71,7 @@ merge_creation:
 
 fortify_version_create:
   image: docker-registry.c2sf.mil/cmis/rockylinux:latest
-  stage: fortify_version_create
+  stage: fortify
   needs: [] # <-- no dependency on fortify_version_create, starts immediately
 
   before_script:
@@ -194,8 +194,8 @@ fortify_version_create:
 fortify_scan: # This job runs in the build stage, which runs first.
   image: docker-registry.c2sf.mil/factory/fortify-sca:latest
 
-  stage: scan
-  needs: [] # <-- no dependency on fortify_version_create, starts immediately
+  stage: fortify
+  needs: ["fortify_version_create"] # <-- no dependency on fortify_version_create, starts immediately
 
   before_script:
     - curl -sSL -o $CI_BUILDS_DIR/$CI_PROJECT_PATH/fcli.tgz https://github.com/fortify/fcli/releases/download/latest/fcli-linux.tgz
