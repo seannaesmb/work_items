@@ -1,30 +1,23 @@
-# This file is a template, and might need editing before it works on your project.
-# This is a sample GitLab CI/CD configuration file that should run without any modifications.
-# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
-# it uses echo commands to simulate the pipeline execution.
-#
-# A pipeline is composed of independent jobs that run scripts, grouped into stages.
-# Stages run in sequential order, but jobs within stages run in parallel.
-#
-# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
-#
-# You can copy and paste this template into a new `.gitlab-ci.yml` file.
-# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
-#
-# To contribute improvements to CI/CD templates, please follow the Development guide at:
-# https://docs.gitlab.com/ee/development/cicd/templates.html
-# This specific template is located at:
-# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
+# ! Default image being used for all jobs unless overridden in a job
+# * This image is built from https://gitlab-api.c2sf.mil/cmis/cmis-codereview.git [codereview] branch
+# * Runs once a week and pushes the built docker image to docker-registry.c2sf.mil/cmis/rockylinux:latest
 default:
   image: docker-registry.c2sf.mil/cmis/rockylinux:latest
 
 workflow:
   rules:
+    # ! Conditions to not run the pipeline
+    # * Merge request event && (Title starts with "Revert" || Source branch starts with "revert-")
+    # * Merge request event
+    # * Commit title starts with "Merge branch"
+    # * Merge request source branch starts with "generated" [gerrit-generated-dev]
+    # * Commit title starts with "Merge <branch> into"
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TITLE =~ /^Revert "/ || $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^revert-/) || $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_TITLE =~ /^Merge\s+[bB]ranch/ || $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^\S+generated\S+$/ || $CI_COMMIT_TITLE =~ /^Merge\s+\S+\sinto/ '
-      when: never
-    # - if: '$CI_COMMIT_BRANCH == "test-gerrit-generate-dev" && $CI_COMMIT_TITLE =~ /^Merge\s+[bB]ranch/'
-    # - if: '$CI_COMMIT_TITLE =~ /^Merge\s+[bB]ranch/'
-    # - if: '$CI_COMMIT_BRANCH == "test-gerrit-generate-dev" && $CI_COMMIT_TITLE =~ /^Merge/'
+      when:
+        never
+        # - if: '$CI_COMMIT_BRANCH == "test-gerrit-generate-dev" && $CI_COMMIT_TITLE =~ /^Merge\s+[bB]ranch/'
+        # - if: '$CI_COMMIT_TITLE =~ /^Merge\s+[bB]ranch/'
+        # - if: '$CI_COMMIT_BRANCH == "test-gerrit-generate-dev" && $CI_COMMIT_TITLE =~ /^Merge/'
     - when: always
 
 stages: # List of stages for jobs, and their order of execution
@@ -52,19 +45,142 @@ merge_creation:
   stage: merge_commit_creation
   script:
     - |
-      MR_TITLE="${CI_COMMIT_REF_NAME}" 
+      JIRA_KEY=$(git log -1 --pretty=%B | grep -oE 'CMIS-[0-9]+' | head -1)
+      if [ -z "${JIRA_KEY}" ]; then
+        echo "ERROR: No CMIS-<number> key found in branch/commit — failing job"
+      exit 1
+        fi
+      echo "Starting items -----"
+      SUMMARY="${SUMMARY}"                        # from first commit subject or Jira ticket summary
+      SOURCE_BRANCH="${CI_COMMIT_REF_NAME}"
+      SHORT_SHA="${CI_COMMIT_SHORT_SHA}"
+      echo "Checking existing MR's"
+      # Check for any existing MR (open or merged) from this source branch targeting test-gerrit-generate-dev
+      EXISTING_MRS=$(curl --insecure --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests?source_branch=${SOURCE_BRANCH}&target_branch=test-gerrit-generate-dev&state=all")
+      echo ${EXISTING_MRS}
 
-      MR_IID=$(curl --insecure --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests?source_branch=${CI_COMMIT_REF_NAME}&state=opened"| jq -r '.[0].iid')
-      echo "MERGE IID ${MR_IID}"
-      if [ -z "$MR_IID" ] || [ "$MR_IID" == "null" ]; then
-        echo "IN IF STATEMENT ---"
-      curl --insecure -X POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --header "Content-Type: application/json" --data '{"source_branch":   "'"${CI_COMMIT_REF_NAME}"'","target_branch": "test-gerrit-generate-dev","title": "'"${MR_TITLE}"'","squash": true}' "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests"
-      echo "IN ELSE STATEMENT"
+      echo "Counting now ---"
+      # Count how many merged MRs already exist for this branch (i.e., is this a repeat round?)
+      MERGED_COUNT=$(echo "${EXISTING_MRS}" | jq '[.[] | select(.state == "merged")] | length')
+
+      if [ "${MERGED_COUNT}" -gt 0 ]; then
+        # Repeat round on a reused branch — disambiguate title/message with short SHA
+        TITLE="[${JIRA_KEY}] ${SUMMARY} (${SHORT_SHA}) | [DEV]"
+        SQUASH_MSG="[${JIRA_KEY}] ${SUMMARY} (${SHORT_SHA})"
+        echo "In if merged count"
+      else
+        # First round on this branch
+        TITLE="[${JIRA_KEY}] ${SUMMARY} | [DEV]"
+        SQUASH_MSG="[${JIRA_KEY}] ${SUMMARY}"
+        echo "In else merged count"
       fi
-      MR_IID=$(curl --insecure --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests?source_branch=${CI_COMMIT_REF_NAME}&state=opened"| jq -r '.[0].iid')
+      echo ${SQUASH_MSG}
 
-      curl --insecure -X PUT --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --header "Content-Type: application/json" --data '{"auto_merge": true}' "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests/${MR_IID}/merge"
+      # Check for an already-OPEN MR to avoid creating a duplicate (reuse instead)
+      OPEN_MR_IID=$(echo "${EXISTING_MRS}" | jq '[.[] | select(.state == "opened")] | .[0].iid // empty')
 
+      if [ -n "${OPEN_MR_IID}" ]; then
+        echo "Open MR !${OPEN_MR_IID} already exists for ${SOURCE_BRANCH} — updating title/squash message only"
+        curl --insecure --request PUT "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests/${OPEN_MR_IID}" \
+          --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+          --data-urlencode "title=${TITLE}" \
+          --data-urlencode "squash_commit_message=${SQUASH_MSG}"
+          echo "In if already exist"
+      else
+        echo "Creating new MR for ${SOURCE_BRANCH}"
+        RESPONSE=$(curl --insecure --request POST "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests" \
+          --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+          --data-urlencode "source_branch=${SOURCE_BRANCH}" \
+          --data-urlencode "target_branch=test-gerrit-generate-dev" \
+          --data-urlencode "title=${TITLE}" \
+          --data-urlencode "squash_commit_message=${SQUASH_MSG}" \
+          --data-urlencode "squash=true" \
+          --data-urlencode "auto_merge=true")
+          echo "In else of creating new"
+
+        NEW_IID=$(echo "${RESPONSE}" | jq '.iid // empty')
+
+        if [ -z "${NEW_IID}" ]; then
+          # 409-style race: another job created it between our check and our POST.
+          # Re-fetch by source_branch rather than parsing the error body (per your existing pattern)
+          NEW_IID=$(curl --insecure --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+            "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests?source_branch=${SOURCE_BRANCH}&target_branch=test-gerrit-generate-dev&state=opened" \
+            | jq '.[0].iid // empty')
+            echo "In IF no new id"
+        fi
+
+        echo "MR IID: ${NEW_IID}"
+      fi
+
+      # Resetting Title for TESET
+      TITLE="[${JIRA_KEY}] ${SUMMARY}"
+
+      # =====================================================================
+      # SECOND MR: source_branch -> test  (squash, DRAFT, standby for UAT)
+      # No auto_merge param at all — must only be merged by a deliberate
+      # human action once status::validated-on-dev is confirmed.
+      # =====================================================================
+      echo "Checking existing test MR's"
+      TEST_TARGET_BRANCH="development"   # <-- confirm this matches your actual UAT-bound branch name
+
+      # GitLab recognizes a leading "Draft: " title prefix and sets draft=true automatically
+      TEST_TITLE="Draft: [${JIRA_KEY}] ${SUMMARY} | [UAT]"
+      TEST_SQUASH_MSG="${SQUASH_MSG}"   # squash message stays clean — no "Draft:" baked into test history
+
+      echo "-------------${TEST_TITLE}-----------------""
+
+      EXISTING_TEST_MRS=$(curl --insecure --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests?source_branch=${SOURCE_BRANCH}&target_branch=${TEST_TARGET_BRANCH}&state=all")
+      echo ${EXISTING_TEST_MRS}
+      echo "-------------${TEST_TITLE}-----------------""
+      OPEN_TEST_MR_IID=$(echo "${EXISTING_TEST_MRS}" | jq '[.[] | select(.state == "opened")] | .[0].iid // empty')
+
+      if [ -n "${OPEN_TEST_MR_IID}" ]; then
+        echo "Open test MR !${OPEN_TEST_MR_IID} already exists for ${SOURCE_BRANCH} — updating title/squash message only"
+        curl --insecure --request PUT "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests/${OPEN_TEST_MR_IID}" \
+          --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+          --data-urlencode "title=${TEST_TITLE}" \
+          --data-urlencode "squash_commit_message=${TEST_SQUASH_MSG}"
+          echo "In if test MR already exists"
+      else
+        echo "Creating new standby MR for ${SOURCE_BRANCH} -> ${TEST_TARGET_BRANCH} (draft)"
+        TEST_RESPONSE=$(curl --insecure --request POST "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests" \
+          --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+          --data-urlencode "source_branch=${SOURCE_BRANCH}" \
+          --data-urlencode "target_branch=${TEST_TARGET_BRANCH}" \
+          --data-urlencode "title=${TEST_TITLE}" \
+          --data-urlencode "squash_commit_message=${TEST_SQUASH_MSG}" \
+          --data-urlencode "squash=true")
+          echo "In else of creating new test MR"
+
+        NEW_TEST_IID=$(echo "${TEST_RESPONSE}" | jq '.iid // empty')
+
+        if [ -z "${NEW_TEST_IID}" ]; then
+          # Same 409-style race handling as the dev MR block above
+          NEW_TEST_IID=$(curl --insecure --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+            "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests?source_branch=${SOURCE_BRANCH}&target_branch=${TEST_TARGET_BRANCH}&state=opened" \
+            | jq '.[0].iid // empty')
+            echo "In IF no new test id"
+        fi
+
+        echo "test MR IID (draft/standby): ${NEW_TEST_IID}"
+      fi
+
+
+
+      # MR_TITLE="${CI_COMMIT_REF_NAME}" 
+
+      # MR_IID=$(curl --fail --insecure --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests?source_branch=${CI_COMMIT_REF_NAME}&state=opened"| jq -r '.[0].iid')
+
+      # echo "MERGE IID ${MR_IID}"
+      # # * Checks if the merge request already exists, if not it creates a new merge request with the current branch as source and test-gerrit-generate-dev as target
+      # if [ -z "$MR_IID" ] || [ "$MR_IID" == "null" ]; then
+      #   echo "IN IF STATEMENT ---"
+      # curl --fail --insecure -X POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --header "Content-Type: application/json" --data '{"source_branch":   "'"${CI_COMMIT_REF_NAME}"'","target_branch": "test-gerrit-generate-dev","title": "'"${MR_TITLE}"'","squash": true}' "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests"
+      # echo "IN ELSE STATEMENT"
+      # fi
+      # MR_IID=$(curl --fail --insecure --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests?source_branch=${CI_COMMIT_REF_NAME}&state=opened"| jq -r '.[0].iid')
+
+      # curl --fail --insecure -X PUT --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --header "Content-Type: application/json" --data '{"auto_merge": true}' "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests/${MR_IID}/merge"
   rules:
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
       when: always
