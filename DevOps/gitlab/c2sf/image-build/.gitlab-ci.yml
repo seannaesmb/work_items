@@ -19,9 +19,14 @@ build-job:
     - |
       echo "FROM $DOCKER_CF_INFO:$DOCKER_CF_TAG" >> dockerfile
 
-      echo "RUN dnf update -y && dnf install python3 git maven.noarch java-17-openjdk.x86_64 jq coreutils -y --allowerasing " >> dockerfile
+      echo "RUN dnf update -y && dnf install ca-certificates python3 git maven.noarch java-17-openjdk.x86_64 jq coreutils unzip -y --allowerasing " >> dockerfile
       echo "RUN curl -sSL -o /opt/fcli.tgz https://github.com/fortify/fcli/releases/download/latest/fcli-linux.tgz" >> dockerfile
       echo "RUN tar -xvzf /opt/fcli.tgz" >> dockerfile
+      echo "RUN curl -sSL -o /opt/dod_certs.zip https://dl.dod.cyber.mil/wp-content/uploads/pki-pke/zip/unclass-certificates_pkcs7_DoD.zip" >> dockerfile
+      echo "RUN cd /opt/; unzip -f /opt/dod_certs.zip" >> dockerfile
+      echo "RUN find /opt/" >> dockerfile
+      echo "RUN cp /opt/Certificates_PKCS7_v5_14_DoD/DoD_PKE_CA_chain.pem /etc/pki/ca-trust/source/anchors/" >> dockerfile
+      echo "RUN update-ca-trust extract" >> dockerfile
        echo "COPY . /app" >> dockerfile
        echo "WORKDIR /app" >> dockerfile
        echo "RUN cd /app && mvn clean && mvn package" >> dockerfile
