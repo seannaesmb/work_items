@@ -181,6 +181,7 @@ merge_creation:
       # MR_IID=$(curl --fail --insecure --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests?source_branch=${CI_COMMIT_REF_NAME}&state=opened"| jq -r '.[0].iid')
 
       # curl --fail --insecure -X PUT --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --header "Content-Type: application/json" --data '{"auto_merge": true}' "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/merge_requests/${MR_IID}/merge"
+  retry: 2
   rules:
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
       when: always
@@ -293,9 +294,10 @@ fortify_version_create:
         curl --insecure -X "PUT" "https://fortify.c2sf.mil/api/v1/projectVersions/$id_creation" -H "accept: application/json" -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" -H "Content-Type: application/json" -d '{ "committed" : true }' | jq
         echo "##########################"  
         exit 0
+  retry: 2
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "development"'
-      when: always
+    # - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "development"'
+    #   when: always
     - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"|| $CI_PIPELINE_SOURCE == "merge_request_event"'
       when: never # Do not run the pipeline for these branches
 
@@ -363,7 +365,7 @@ fortify_scan: # This job runs in the build stage, which runs first.
       fi
 
     # - sourceanalyzer -verbose -b srcbuild $CI_BUILDS_DIR/cmis/cmis/src/htdocs/**/*
-
+    - sourceanalyzer -b srcbuild -clean
     - sourceanalyzer -verbose -b srcbuild -source-base-dir "$CI_PROJECT_DIR/src/htdocs" $files_to_scan
     - mkdir -p $CI_BUILDS_DIR/$CI_PROJECT_PATH/tmp
     - echo "Setting FPRNAME"
@@ -381,10 +383,10 @@ fortify_scan: # This job runs in the build stage, which runs first.
       -H "accept: application/json" \
       -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" \
       -H "Content-Type: application/json" > $CI_BUILDS_DIR/$CI_PROJECT_PATH/tmp/app.json
-
+  retry: 2
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "development"'
-      when: always
+    # - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "development"'
+    #   when: always
     - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev" || $CI_PIPELINE_SOURCE == "merge_request_event"'
       when: never # Do not run the pipeline for these branches
 
@@ -441,9 +443,10 @@ fortify_auto_approve:
       # -H "Authorization: FortifyToken ${FORTIFY_API_TOKEN}" \
       # -H "Content-Type: application/json" \
       # -d '{"comment":"Automated CI approval"}'
+  retry: 2
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "development"'
-      when: always
+    # - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "development"'
+    #   when: always
     - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"'
       when: never # Do not run the pipeline for these branches
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -534,35 +537,36 @@ internal_code_scan:
 
       cd $CI_PROJECT_DIR
       mkdir -p /tmp/codereview-results
-        if [ "$CI_COMMIT_BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
-          # First push to branch — only HEAD's own diff is safe to inspect
-          RAW_FILES=$(git show $CI_COMMIT_SHA --format= --name-status --diff-filter=d)
-        else
-          # Full range diff so multiple commits in one push are all captured, deduped naturally
-          RAW_FILES=$(git diff $CI_COMMIT_BEFORE_SHA..$CI_COMMIT_SHA --name-status --diff-filter=d)
-        fi
+      if [ "$CI_COMMIT_BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+        # First push to branch — only HEAD's own diff is safe to inspect
+        RAW_FILES=$(git diff-tree --no-commit-id --name-status -r -m --diff-filter=d $CI_COMMIT_SHA)
+      else
+        # Full range diff so multiple commits in one push are all captured, deduped naturally
+        RAW_FILES=$(git diff $CI_COMMIT_BEFORE_SHA..$CI_COMMIT_SHA --name-status --diff-filter=d)
+      fi
 
-        tmp=($(echo "$RAW_FILES" \
-          | sed -e 's/^R[[:space:]]\+[^ ]\+[[:space:]]\+/R/;s/^[[:alpha:]]\+[[:space:]]\+//' \
-          | grep -i -e '\.cfm$' -e '\.cfc$' \
-          | sed -ne 's|^src/htdocs/||p' \
-          | sort -u || true))
+      RAW_FILES=$(echo "$RAW_FILES" | awk '!seen[$2]++')
 
+      tmp=($(echo "$RAW_FILES" \
+        | sed -e 's/^R[[:space:]]\+[^ ]\+[[:space:]]\+/R/;s/^[[:alpha:]]\+[[:space:]]\+//' \
+        | grep -i -e '\.cfm$' -e '\.cfc$' \
+        | sed -ne 's|^src/htdocs/||p' \
+        | sort -u || true))
 
       #tmp=($(git show $CI_COMMIT_SHA --format= --name-status --diff-filter=d | sed -e 's/^R[[:space:]]\+[^ ]\+[[:space:]]\+/R/;s/^[[:alpha:]]\+[[:space:]]\+//' | grep -i -e '\.cfm$' -e '\.cfc$' | sed -ne 's|^src/htdocs/||p'||true))
       echo ${#tmp[*]}
-        if [[ ! ${#tmp[*]} -eq 0 ]]; then
-          for line in ${tmp[*]}; do SAFE_NAME=$(echo "$line" | tr '/' '_'); echo $line; bash -x /app/bin/codereview.bash "" "$(git rev-parse --show-toplevel)/src/htdocs" "$line" > "/tmp/codereview-results/${SAFE_NAME}.json";
-          [ $? -ne 0 ] && OVERALL_EXIT=1
-          done
-        fi
+      if [[ ! ${#tmp[*]} -eq 0 ]]; then
+        for line in ${tmp[*]}; do SAFE_NAME=$(echo "$line" | tr '/' '_'); echo $line; bash -x /app/bin/codereview.bash "" "$(git rev-parse --show-toplevel)/src/htdocs" "$line" > "/tmp/codereview-results/${SAFE_NAME}.json";
+        [ $? -ne 0 ] && OVERALL_EXIT=1
+        done
+      fi
 
       export OVERALL_EXIT
 
       ## Python Section ##
 
       python3 - <<'PYEOF'
-      import json, os, glob
+      import json, os, glob, subprocess
 
       all_issues    = []
       file_findings = []
@@ -618,6 +622,96 @@ internal_code_scan:
       print(json.dumps(result, indent=2))
       PYEOF
 
+      #---------------------------------# 
+      # Convert json to code quality report for GitLab
+      #---------------------------------#
+
+      # python3 - <<'PYEOF'
+      # import json
+      # import re
+      # import hashlib
+      # import subprocess
+      # import os
+
+      # def build_path_lookup(repo_root=None):
+      #     """Map bare filename -> full path, by walking the directory tree."""
+      #     repo_root = repo_root or os.environ.get("CI_BUILDS_DIR/CI_PROJECT_PATH/", ".")
+      #     mapping = {}
+      #     for dirpath, _, filenames in os.walk(repo_root):
+      #         for name in filenames:
+      #             full_path = os.path.join(dirpath, name)
+      #             mapping.setdefault(name, full_path)
+      #     return mapping
+
+      # def normalize_path(file_path, path_lookup):
+      #     return path_lookup.get(os.path.basename(file_path), file_path)
+
+      # def convert_report():
+      #     path_lookup = build_path_lookup()
+      #     try:
+      #         with open('internal_code_scan_scan_result.json', 'r') as f:
+      #             data = json.load(f)
+      #     except FileNotFoundError:
+      #         print("Error: internal_code_scan_scan_result.json not found.")
+      #         return
+
+      #     gitlab_issues = []
+
+      #     for finding in data.get("file_findings", []):
+      #         file_path = normalize_path(finding.get("file", "unknown_file"), path_lookup)
+      #         raw_issues = finding.get("issues", "")
+      #         print(f"Processing file: {file_path}")
+      #         # Split at "LEGEND" and explicitly take the first part (index 0) as a string
+      #         clean_issues_text = raw_issues.split("LEGEND")[0]
+
+      #         # FIXED: re.findall now receives a valid string instead of a Python list
+      #         matches = re.findall(r"Line\s+(\d+):\s*([^;\n]+)", clean_issues_text)
+
+      #         for line_str, description in matches:
+      #             try:
+      #                 line_num = int(line_str)
+      #                 clean_desc = description.strip()
+
+      #                 fingerprint_source = f"{file_path}:{line_num}:{clean_desc}"
+      #                 fingerprint = hashlib.sha256(fingerprint_source.encode('utf-8')).hexdigest()
+
+      #                 gitlab_issue = {
+      #                     "description": f"Prohibited tag found: {clean_desc}",
+      #                     "check_name": "prohibited-cfml-tags",
+      #                     "fingerprint": fingerprint,
+      #                     "severity": "major",
+      #                     "location": {
+      #                         "path": file_path,
+      #                         "lines": {
+      #                             "begin": line_num
+      #                         }
+      #                     }
+      #                 }
+      #                 print("Keys:", list(data.keys()))
+      #                 print("file_findings count:", len(data.get("file_findings", [])))
+      #                 gitlab_issues.append(gitlab_issue)
+      #             except ValueError:
+      #                 continue
+
+      #     with open('./gl-code-quality-report.json', 'w') as f:
+      #         json.dump(gitlab_issues, f, indent=2)
+
+      # if __name__ == "__main__":
+      #     convert_report()
+
+      # PYEOF
+
+
+      ## ---
+      # Attempting to do inline comments
+            REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+      SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+
+      python3 /app/ci_cd/internal_code_scan_merge_request_notes.py
+
+      echo "Code quality report generated."
+
+      cat gl-code-quality-report.json
     - |
       # Exit with original code scan result after artifact is written
       exit $OVERALL_EXIT
@@ -632,13 +726,17 @@ internal_code_scan:
       ##curl --fail --show-error --insecure -X PUT   'https://jira.c2sf.mil/rest/api/2/issue/CMIS-5'   -H 'accept: application/json'   -H 'Authorization: Bearer NDQ3MzI1MTQyNDQ3OkT4XjaTTxydR4566Py1lQwCl5Bs'   -H 'Content-Type: application/json' -d '{ "update": { "<customfield>": [ { "set": "'"https://fortify.c2sf.mil/html/ssc/version/$id_creation"'" } ] } }'
 
   rules:
-    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev" || $CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "production" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "gerrit-generated-dev"'
       when: never # Do not run the pipeline for these branches
     - when: always # Run the pipeline for all other branches
   artifacts:
+    reports:
+      codequality: gl-code-quality-report.json
     when: always
     paths:
       - "*_scan_result.json"
+      - gl-code-quality-report.json
+
     expire_in: 1 day
 
 fortify_scan_merge_request:
