@@ -1,0 +1,360 @@
+{
+  "config.version": "2.0",
+  "config.project.from.csv": "false",
+  "config.encoding": "UTF-8",
+  "config.email.suffix": "@",
+  "config.field.mappings": {
+    "duplicates": {
+      "link.type": "10002"
+    },
+    "parent_subtask": {
+      "jira.field": "subtask-parent-id"
+    },
+    "parent_epic": {
+      "jira.field": "Epic Link"
+    },
+    "parent_initiative": {
+      "jira.field": "Parent Link"
+    },
+    "parent_same_link": {
+      "link.type": "10532"
+    },
+    "Child of": {
+      "link.type": "10555"
+    },
+    "relates": {
+      "link.type": "10003"
+    },
+    "blocks": {
+      "link.type": "10304"
+    },
+    "created": {
+      "jira.field": "created"
+    },
+    "author": {
+      "jira.field": "creator"
+    },
+    "subject": {
+      "jira.field": "summary"
+    },
+    "start": {
+      "existing.custom.field": "10522"
+    },
+    "follows": {
+      "link.type": "10204"
+    },
+    "description": {
+      "jira.field": "description"
+    },
+    "includes": {
+      "link.type": "10202"
+    },
+    "priority": {
+      "jira.field": "priority"
+    },
+    "type": {
+      "jira.field": "issuetype"
+    },
+    "version": {
+      "jira.field": "fixVersions"
+    },
+    "assigned": {
+      "jira.field": "assignee"
+    },
+    "op-ticket-legacy": {
+      "existing.custom.field": "18563"
+    },
+    "comment": {
+      "jira.field": "comment"
+    },
+    "id": {
+      "jira.field": "issue-id"
+    },
+    "updated": {
+      "jira.field": "updated"
+    },
+    "external_id": {
+      "jira.field": "External issue ID"
+    },
+    "requires": {
+      "link.type": "10207"
+    },
+    "status": {
+      "jira.field": "status"
+    }
+  },
+  "config.value.mappings": {
+    "assigned": {
+      "45": "sbrown2",
+      "6": "sbrown2",
+      "1022": "sbrown2",
+      "154": "sbrown2",
+      "10": "sbrown2",
+      "15": "sbrown2",
+      "16": "sbrown2",
+      "17": "sbrown2",
+      "1033": "sbrown2",
+      "1026": "sbrown2",
+      "7": "sbrown2",
+      "8": "sbrown2",
+      "9": "sbrown2",
+      "20": "sbrown2",
+      "21": "sbrown2",
+      "22": "lwildy",
+      "23": "sbrown2",
+      "67": "67",
+      "24": "sbrown2",
+      "25": "sbrown2",
+      "26": "sbrown2",
+      "27": "27",
+      "28": "sbrown2",
+      "29": "jburnham",
+      "1044": "djohnson2",
+      "1041": "sbrown2",
+      "1035": "sbrown2",
+      "1014": "ksartorius",
+      "30": "30",
+      "32": "sbrown2",
+      "33": "sbrown2",
+      "34": "sbrown2",
+      "35": "35",
+      "38": "sbrown2",
+      "39": "sbrown2",
+      "1010": "sbrown2",
+      "143": "sbrown2",
+      "145": "sbrown2",
+      "1004": "sbrown2",
+      "40": "sbrown2",
+      "41": "sbrown2",
+      "42": "sbrown2",
+      "43": "sbrown2"
+    },
+    "creator": {
+      "45": "sbrown2",
+      "1022": "sbrown2",
+      "154": "sbrown2",
+      "10": "sbrown2",
+      "15": "sbrown2",
+      "16": "sbrown2",
+      "17": "sbrown2",
+      "1033": "sbrown2",
+      "1026": "sbrown2",
+      "6": "sbrown2",
+      "7": "sbrown2",
+      "8": "sbrown2",
+      "9": "sbrown2",
+      "20": "sbrown2",
+      "21": "sbrown2",
+      "22": "lwildy",
+      "23": "sbrown2",
+      "67": "67",
+      "24": "sbrown2",
+      "25": "sbrown2",
+      "26": "sbrown2",
+      "27": "27",
+      "28": "sbrown2",
+      "29": "jburnham",
+      "1044": "djohnson2",
+      "1041": "sbrown2",
+      "1035": "sbrown2",
+      "1014": "ksartorius",
+      "30": "30",
+      "32": "sbrown2",
+      "33": "sbrown2",
+      "34": "sbrown2",
+      "35": "35",
+      "38": "sbrown2",
+      "39": "sbrown2",
+      "1010": "sbrown2",
+      "143": "sbrown2",
+      "145": "sbrown2",
+      "1004": "sbrown2",
+      "40": "sbrown2",
+      "41": "sbrown2",
+      "42": "sbrown2",
+      "43": "sbrown2"
+    },
+    "version": {
+      "6": "CMIS Legacy Sprints",
+      "7": "CMIS 2017 #11.2",
+      "8": "CMIS 2017 #12",
+      "9": "CMIS 2018 #01 - 5.10.3 Jan",
+      "10": "CMIS 2018 #02 - 5.10.4 Feb",
+      "11": "CMIS 2018 #04 - 5.10.4.2 March",
+      "12": "CMIS 2018 #03 - 5.10.4.1",
+      "13": "CMIS 2018 #06 - 5.10.4.3 April",
+      "14": "CMIS 2018 #05 - 5.10.4.2.1",
+      "15": "CMIS 2018 #07 - 5.10.4.4 May",
+      "16": "CMIS 2018 #08 - 5.10.4.5 June",
+      "17": "CMIS 2018 #09 - 5.10.4.6 July",
+      "18": "CMIS 2018 #10 - 5.10.4.7 Aug",
+      "19": "CMIS 2018 #11 - 5.10.4.8 Sept",
+      "20": "CMIS 2018 #12 - 5.10.4.9 Oct",
+      "21": "CMIS 2018 #13 - 5.10.4.10 Nov",
+      "22": "CMIS 2018 #14 - 5.10.4.11 Dec",
+      "23": "CMIS 2019 #01 - 5.10.4.12 Jan",
+      "24": "CMIS 2019 #02 - 5.10.5.2 Feb",
+      "25": "CMIS 2019 #03 - 5.10.5.3 March",
+      "26": "CMIS 2019 #04 - 5.10.5.4 April",
+      "27": "CMIS 2019 #04 Apr - 5.10.4.15",
+      "28": "CMIS 2019 #05 May- 5.10.4.16",
+      "29": "CMIS 2019 #06 June - 5.10.4.17",
+      "30": "CMIS 2019 #07 July - 5.10.4.18",
+      "31": "CMIS 2019 #08 Aug - 5.10.4.19",
+      "32": "CMIS 2019 Sep 02-5.10.4.20",
+      "33": "CMIS 2019 Oct 02-5.10.4.22",
+      "34": "CMIS 2019 Nov 02-5.10.4.23",
+      "35": "test",
+      "36": "CMIS 2019 Dec 02-5.10.4.24",
+      "37": "CMIS 2020 Feb 02-6.2.0.0",
+      "38": "CMIS 2020 Jan 02-5.10.4.25",
+      "39": "CMIS 2020 Mar-6.3.0.0",
+      "40": "CMIS 2020 Apr-6.4.0.0",
+      "41": "CMIS 2020 May-7.1.0.0",
+      "42": "CMIS 2020 June-7.2.0.0",
+      "43": "CMIS 2020 July-7.3.0.0",
+      "44": "CMIS 2020 August-7.4.0.0",
+      "45": "CMIS 2020 September-7.5.0.0",
+      "46": "CMIS 2020 October -7.6.0.0",
+      "47": "CMIS 2020 November -7.7.0.0",
+      "48": "CMIS 2020 December -7.8.0.0",
+      "49": "CMIS 2021 January -7.9.0.0",
+      "50": "CMIS 2021 February-7.10.0.0",
+      "51": "CMIS 2021 March-7.11.0.0",
+      "52": "CMIS 2021 April-7.12.0.0",
+      "53": "CMIS 2021 May-7.13.0.0",
+      "54": "CMIS 2021 June-7.14.0.0",
+      "55": "CMIS 2021 July-7.15.0.0",
+      "56": "CMIS 2021 August-7.16.0.0",
+      "57": "CMIS 2021 September-7.17.0.0",
+      "58": "CMIS 2021 October-7.18.0.0",
+      "59": "CMIS 2021 November-7.19.0.0",
+      "60": "CMIS 2021 December-7.20.0.0",
+      "61": "CMIS 2022 01-January-7.21.0.0",
+      "62": "CMIS 2022 02-February-7.22.0.0",
+      "63": "CMIS 2022 03-March-7.23.0.0",
+      "64": "CMIS 2022 04-April-7.24.0.0",
+      "65": "CMIS 2022 05-May-7.25.0.0",
+      "120": "CMIS 2022 06-June-7.26.0.0",
+      "126": "CMIS 2022 07-July-7.27.0.0",
+      "201": "CMIS 2022 08-August-7.28.0.0",
+      "202": "CMIS 2022 09-September-7.29.0.0",
+      "203": "CMIS  2022 10-October-7.30.0.0",
+      "204": "CMIS 2022 11-November-7.31.0.0",
+      "205": "CMIS 2022 12-December-7.32.0.0",
+      "206": "CMIS 2023 January",
+      "207": "CMIS 2023 February",
+      "208": "CMIS 2023 March",
+      "209": "CMIS 2023 April",
+      "210": "CMIS 2023 May",
+      "211": "CMIS 2023 June",
+      "212": "CMIS 2023 July",
+      "213": "CMIS 2023 August",
+      "214": "CMIS 2023 September",
+      "215": "CMIS 2023 October",
+      "216": "CMIS 2023 November",
+      "217": "CMIS 2023 December",
+      "218": "CMIS 2024 January",
+      "219": "CMIS 2024 February",
+      "220": "CMIS 2024 March",
+      "221": "CMIS 2024 April",
+      "222": "CMIS 2024 May",
+      "223": "CMIS 2024 June",
+      "224": "CMIS 2024 July",
+      "225": "CMIS 2024 August",
+      "226": "CMIS 2024 September",
+      "227": "CMIS 2024 October",
+      "228": "CMIS 2024 November",
+      "229": "CMIS 2024 December",
+      "230": "CMIS 2025-01 January",
+      "231": "CMIS 2025-02 February",
+      "232": "CMIS 2025-03 March",
+      "233": "CMIS 2025-04 April",
+      "234": "CMIS 2025-05 May",
+      "235": "CMIS 2025-06 June",
+      "236": "CMIS 2025-07 July",
+      "237": "CMIS 2025-08-August",
+      "238": "CMIS 2025-09-September",
+      "239": "CMIS 2025-10-October",
+      "240": "CMIS 2025-11-November",
+      "241": "CMIS 2025-12-December",
+      "242": "CMIS 2026-01-January",
+      "243": "CMIS 2026-02-February",
+      "244": "CMIS 2026-03-March",
+      "245": "CMIS 2026-04-April",
+      "246": "CMIS 2026-05-May",
+      "247": "CMIS 2026-06-June",
+      "248": "CMIS 2026-07-July",
+      "249": "CMIS 2026-08-August"
+    },
+    "type": {
+      "Documentation": "Task",
+      "Risk": "Initiative",
+      "Requirement": "Story",
+      "Meeting": "Task",
+      "Improvement": "Story",
+      "Defect": "Bug",
+      "External Task": "Task",
+      "Action item": "Task",
+      "Help desk ticket": "Task",
+      "New feature": "Story",
+      "Sub-task": "Sub-task",
+      "Info request": "Task",
+      "Test": "<<blank>>",
+      "Task": "Task",
+      "Milestone": "Initiative",
+      "Phase": "Initiative",
+      "Feature": "Epic",
+      "Epic": "Epic",
+      "User story": "Story",
+      "Bug": "Bug",
+      "Technical task": "Task",
+      "Technical debt": "Task",
+      "External Ticket": "Task",
+      "Story": "Story",
+      "Review task": "Sub-task"
+    },
+    "status": {
+      "1": "13202",
+      "2": "3",
+      "3": "3",
+      "4": "13201",
+      "5": "13205",
+      "6": "13205",
+      "7": "3",
+      "8": "13210",
+      "9": "2",
+      "10": "2",
+      "11": "2",
+      "12": "6",
+      "13": "13200",
+      "14": "10542",
+      "15": "13200",
+      "16": "10132",
+      "17": "2",
+      "18": "13203",
+      "19": "10132",
+      "20": "10132",
+      "21": "13207",
+      "22": "3",
+      "23": "13200",
+      "24": "2",
+      "25": "13204",
+      "26": "13206",
+      "27": "13203",
+      "28": "13212",
+      "29": "10542"
+    }
+  },
+  "config.delimiter": ",",
+  "config.project": {
+    "project.type": null,
+    "project.key": "CMIS",
+    "project.description": null,
+    "project.url": null,
+    "project.name": "Corporate Management Information System",
+    "project.lead": null
+  },
+  "config.date.format": "dd/MMM/yy h:mm a",
+  "config.create.and.assign.default.project.role": "false"
+}
