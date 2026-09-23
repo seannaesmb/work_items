@@ -47,7 +47,7 @@
       "jira.field": "description"
     },
     "includes": {
-      "link.type": "10202"
+      "link.type": "11004"
     },
     "priority": {
       "jira.field": "priority"

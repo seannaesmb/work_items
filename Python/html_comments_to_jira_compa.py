@@ -76,11 +76,16 @@ def html_to_jira(html_text):
     text = re.sub(r"\n{3,}", "\n\n", text)
 
     return text.strip()
+#Journals
+df = pd.read_csv("C:\\projects\\sbrown\\Python\\db_file_exports\\20260922\\journals_non_ascii.csv")
+#Work Packages
+df_wp = pd.read_csv("C:\\projects\\sbrown\\Python\\db_file_exports\\20260922\\work_packages_non_ascii.csv")
+df_wp["description"] = df_wp["description"].apply(html_to_jira)
 
-df = pd.read_csv("C:\\projects\\sbrown\\Python\\db_file_exports\\output_csv\\journals_202602052106.csv")
 
 # Replace the same column in-place
+#Journals
 df["notes"] = df["notes"].apply(html_to_jira)
 
-df.to_csv("C:\\projects\\sbrown\\Python\\db_file_exports\\output_csv\\journals_202602052106_jira_comp.csv", index=False)
-
+df.to_csv("C:\\projects\\sbrown\\Python\\db_file_exports\\20260922\\jira_compatible_journals_non_ascii.csv", index=False)
+df_wp.to_csv("C:\\projects\\sbrown\\Python\\db_file_exports\\20260922\\jira_compatible_work_packages_non_ascii.csv", index=False)
