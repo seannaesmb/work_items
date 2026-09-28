@@ -284,6 +284,13 @@ def carrierwave_sanitize(name):
     return CARRIERWAVE_BAD_CHARS_RE.sub("_", name)
 
 
+def loose_key(name):
+    """Compare names ignoring case, spacing, underscores, and all
+    punctuation/dash variants (en/em dash, nbsp, doubled spaces, etc.)."""
+    n = unicodedata.normalize("NFKC", str(name))
+    return re.sub(r"[\W_]+", "", n, flags=re.UNICODE).lower()
+
+
 def resolve_paths(ticket, pairs, disk_index, folder_files, unresolved_rows):
     """pairs: list of (id, filename, disk_filename). Returns verified
     relative paths that exist on disk. Anything unresolved is appended to
@@ -310,6 +317,17 @@ def resolve_paths(ticket, pairs, disk_index, folder_files, unresolved_rows):
                 print(f"NOTE: ticket {ticket}: '{att_id}/{raw_filename}' matched via "
                       f"{hit[0]} -> {hit[1]}", file=sys.stderr)
             continue
+
+        # ---- fallback: same name once spacing/punctuation differences are ignored ----
+        if att_id in folder_files:
+            want = loose_key(raw_filename)
+            same = [a for a in folder_files[att_id] if loose_key(a) == want]
+            if len(same) == 1:
+                path = f"{att_id}/{same[0]}"
+                resolved.append(path)
+                print(f"NOTE: ticket {ticket}: '{att_id}/{raw_filename}' matched loosely "
+                      f"(punctuation/spacing ignored) -> {path}", file=sys.stderr)
+                continue
 
         # ---- unresolved: work out why and suggest what to change ----
         if att_id not in folder_files:
@@ -342,6 +360,7 @@ def resolve_paths(ticket, pairs, disk_index, folder_files, unresolved_rows):
                     suggestion = ""
         unresolved_rows.append({
             "ticket": ticket, "id": att_id, "filename_in_sheet": raw_filename,
+            "filename_repr": ascii(raw_filename),
             "reason": reason, "detail": detail, "suggested_path": suggestion,
         })
     return resolved
@@ -403,7 +422,7 @@ def process(main_path, attachments_path, attachment_root, out_path, container_ty
 
     if unresolved_rows:
         report_path = os.path.splitext(out_path)[0] + "_unresolved.csv"
-        fields = ["ticket", "id", "filename_in_sheet", "reason", "detail", "suggested_path"]
+        fields = ["ticket", "id", "filename_in_sheet", "filename_repr", "reason", "detail", "suggested_path"]
         with open(report_path, "w", newline="", encoding="utf-8-sig") as fh:
             w = csv.DictWriter(fh, fieldnames=fields)
             w.writeheader()
