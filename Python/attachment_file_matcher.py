@@ -41,7 +41,7 @@ import os
 import re
 import sys
 import unicodedata
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 import pandas as pd
 
@@ -366,7 +366,8 @@ def resolve_paths(ticket, pairs, disk_index, folder_files, unresolved_rows):
     return resolved
 
 
-def process(main_path, attachments_path, attachment_root, out_path, container_type):
+def process(main_path, attachments_path, attachment_root, out_path, container_type,
+            prefix="", encode=False):
     disk_index, folder_files = build_disk_index(attachment_root)
     print(f"Indexed {len(disk_index)} files under {attachment_root}")
 
@@ -404,9 +405,9 @@ def process(main_path, attachments_path, attachment_root, out_path, container_ty
             max_needed = max(max_needed, len(resolved))
             matched_tickets += 1
 
-    # Add extra "Attachment" columns if needed
+    # Add extra "attachment" columns if needed
     while len(existing_attachment_cols) < max_needed:
-        new_col_name = "Attachment" if not existing_attachment_cols else f"Attachment.{len(existing_attachment_cols)}"
+        new_col_name = "attachment" if not existing_attachment_cols else f"attachment.{len(existing_attachment_cols)}"
         # avoid collisions if that name somehow already exists
         while new_col_name in main_df.columns:
             new_col_name += "_"
@@ -415,7 +416,8 @@ def process(main_path, attachments_path, attachment_root, out_path, container_ty
 
     for idx, resolved in per_row_resolved.items():
         for i, path in enumerate(resolved):
-            main_df.at[idx, existing_attachment_cols[i]] = path
+            cell = quote(path, safe="/") if encode else path
+            main_df.at[idx, existing_attachment_cols[i]] = f"{prefix}{cell}"
 
     write_table(main_df, out_path)
     print(f"Matched attachments for {matched_tickets} ticket(s). Wrote {out_path}")
@@ -455,6 +457,8 @@ def main():
     parser.add_argument("--root", required=True, help="Attachment root dir, laid out as <root>/<id>/<filename>")
     parser.add_argument("--out", required=True, help="Output path (.csv or .xlsx)")
     parser.add_argument("--container-type", default="WorkPackage", help="Filter attachments to this container_type (default: WorkPackage). Pass '' to disable filtering.")
+    parser.add_argument("--prefix", default="", help="Text written before <id>/<filename> in each Attachment cell, e.g. file:///var/atlassian/application-data/shared-home/data/attachments/file/")
+    parser.add_argument("--encode", action="store_true", help="Percent-encode the <id>/<filename> part (spaces -> %%20 etc.) for URL-style prefixes")
     args = parser.parse_args()
 
     args.main = to_native_path(args.main)
@@ -463,7 +467,11 @@ def main():
     args.out = to_native_path(args.out)
 
     container_type = args.container_type if args.container_type else None
-    process(args.main, args.attachments, args.root, args.out, container_type)
+    prefix = args.prefix
+    if prefix and not prefix.endswith("/"):
+        prefix += "/"
+    process(args.main, args.attachments, args.root, args.out, container_type,
+            prefix=prefix, encode=args.encode)
 
 
 if __name__ == "__main__":
