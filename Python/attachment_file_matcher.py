@@ -4,34 +4,82 @@ attachment_matcher.py
 
 Matches OpenProject ticket numbers (main sheet's first column) against
 rows in an attachments table (matched via container_id), and writes the
-resolved on-disk relative path into repeated "Attachment" header
-columns (one column per match, for tickets with multiple attachments).
+verified attachment location into repeated "Attachment" header columns
+(one column per attachment, for tickets with more than one).
 
-Accepts .csv or .xlsx for BOTH --main and --attachments (auto-detected
-by file extension, can be mixed). --out is written as .csv or .xlsx
-based on its extension.
+OPTIONS
+-------
+Required:
+  --main FILE            Main migration sheet (.csv or .xlsx). Column A must be
+                         the OpenProject ticket number. Existing columns whose
+                         header starts with "Attachment" are reused; more are
+                         added when a ticket has more attachments.
+  --attachments FILE     Attachments table (.csv or .xlsx) with a header row
+                         containing: id, container_id, container_type, filename
+                         (header names are case-insensitive). An optional
+                         disk_filename column is used first when present.
+  --root DIR             Attachment root on disk, laid out as
+                         <root>/<id>/<filename>   e.g. root/38/archive.zip
+                         Quote it if it contains spaces. Under native Windows
+                         Python, /cygdrive/<letter>/... paths are converted to
+                         C:\\... automatically.
+  --out FILE             Output file (.csv or .xlsx, chosen by extension).
+                         A report of failures is written beside it as
+                         <out>_unresolved.csv.
 
-attachments table schema (header row required):
-    id            - subfolder name under the attachment root
-    container_id  - OpenProject ticket number (matches main sheet col A)
-    container_type- e.g. "WorkPackage" (filterable; others ignored by default)
-    filename      - the file's actual name inside that subfolder
+Optional:
+  --container-type TYPE  Only use attachment rows with this container_type.
+                         Default: WorkPackage. Pass '' to disable filtering.
+  --prefix TEXT          Text written before <id>/<filename> in each Attachment
+                         cell (a trailing "/" is added if missing). Only the
+                         cell value changes; files are still verified on disk
+                         using --root. Example:
+                         --prefix "file:///var/atlassian/application-data/shared-home/data/attachments/file/"
+  --encode               Percent-encode the <id>/<filename> part of the cell
+                         (space -> %20, etc.). Use with URL-style prefixes if
+                         Jira has trouble with special characters.
+  -h, --help             Show the option summary and exit.
 
-On-disk layout:
-    <ATTACHMENT_ROOT>/<id>/<filename>
-    e.g. root/38/archive.zip
+HOW A FILENAME IS MATCHED (first hit wins)
+------------------------------------------
+  1. disk_filename column (if the attachments table has one)
+  2. exact name (whitespace/Unicode normalized, case-insensitive)
+  3. URL-decoded name
+  4. OpenProject/CarrierWave rename: characters other than letters, digits,
+     "." "-" "+" become "_"  (e.g. "My Report (v2).pdf" -> "My_Report__v2_.pdf")
+  5. Loose match: ignores case, spaces, underscores and punctuation/dash
+     variants; accepted only if exactly one file in the folder fits.
+Matches from steps 4-5 are printed as NOTE lines on stderr.
 
-Every path is verified against what actually exists on disk (case,
-whitespace, and Unicode-normalized) before being written, so the
-values Jira's importer receives are guaranteed to resolve.
+UNRESOLVED REPORT (<out>_unresolved.csv)
+----------------------------------------
+Columns: ticket, id, filename_in_sheet, filename_repr (hidden characters shown),
+reason, detail, suggested_path. Reasons:
+  SUBFOLDER_MISSING  no <id> folder under --root
+  FOLDER_EMPTY       folder exists but has no files
+  NAME_MISMATCH      folder exists, name differs (see suggested_path)
+  FILE_MISSING       folder has other files, none resemble the name
+Suggested paths are never applied to the output automatically.
 
-Usage:
-    python attachment_matcher.py \
-        --main main_sheet.xlsx \
-        --attachments attachments.csv \
-        --root /path/to/opt/openproject/files/attachment/file \
-        --out output.csv \
-        --container-type WorkPackage
+OUTPUT NOTES
+------------
+  - .xlsx output: illegal control characters are stripped and cells over
+    32,767 characters are truncated (reported on stderr). Use a .csv --out
+    to avoid any truncation.
+  - Numeric IDs stored as floats in Excel (3688.0) are normalized to 3688.
+
+EXAMPLES
+--------
+  python attachment_matcher.py \\
+      --main main_sheet.csv \\
+      --attachments attachments.csv \\
+      --root "/cygdrive/c/Users/me/Downloads/file transfer/opt/openproject/files/attachment/file" \\
+      --out output.csv \\
+      --prefix "file:///var/atlassian/application-data/shared-home/data/attachments/file/"
+
+  # Plain relative paths (no prefix), xlsx in/out, no container_type filter
+  python attachment_matcher.py --main main.xlsx --attachments attachments.xlsx \\
+      --root /opt/openproject/files/attachment/file --out out.xlsx --container-type ''
 """
 
 import argparse
@@ -405,9 +453,9 @@ def process(main_path, attachments_path, attachment_root, out_path, container_ty
             max_needed = max(max_needed, len(resolved))
             matched_tickets += 1
 
-    # Add extra "attachment" columns if needed
+    # Add extra "Attachment" columns if needed
     while len(existing_attachment_cols) < max_needed:
-        new_col_name = "attachment" if not existing_attachment_cols else f"attachment.{len(existing_attachment_cols)}"
+        new_col_name = "Attachment" if not existing_attachment_cols else f"Attachment.{len(existing_attachment_cols)}"
         # avoid collisions if that name somehow already exists
         while new_col_name in main_df.columns:
             new_col_name += "_"
