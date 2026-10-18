@@ -22,6 +22,9 @@
     "Child Of": {
       "link.type": "10555"
     },
+    "attachment" : {
+      "jira.field" : "attachment"
+    },    
     "relates": {
       "link.type": "10003"
     },
