@@ -1,0 +1,87 @@
+- name: Copy and install custom RPM
+  hosts: all
+  become: true
+  tasks:
+    - name: Copy RPM file to the remote server
+      ansible.builtin.copy:
+        src: ../files/appdynamics-machine-agent-26.8.0.5560.x86_64.rpm
+        dest: /tmp/appdynamics-machine-agent-26.8.0.5560.x86_64.rpm
+        mode: "0644"
+
+    - name: Install the copied RPM package
+      ansible.builtin.command: dnf install -y /tmp/appdynamics-machine-agent-26.8.0.5560.x86_64.rpm
+
+    - name: Create tmp directory in machine-agent dir
+      ansible.builtin.file:
+        path: /etc/systemd/system/appdynamics-machine-agent.service.d/
+        state: directory
+        mode: "0750"
+        owner: root
+        group: root
+
+    - name: Copy override file to the remote server
+      ansible.builtin.copy:
+        src: ../files/override.conf
+        dest: /etc/systemd/system/appdynamics-machine-agent.service.d/override.conf
+        mode: "0644"
+        owner: root
+        group: root
+
+    - name: Get appd-agt cert
+      community.crypto.get_certificate:
+        # host: appd-agt.csd.disa.mil
+        host: google.com
+        port: 443
+        timeout: 10
+      register: cert
+
+    - name: Output cert to file
+      community.crypto.x509_certificate_convert:
+        src_content: "{{ cert.cert }}"
+        dest_path: /tmp/appd-agt.csd.disa.mil.pem
+        format: pem
+
+    - name: Generated pkcs12 cert
+      community.crypto.openssl_pkcs12:
+        action: export
+        certificate_path: /tmp/appd-agt.csd.disa.mil.pem
+        path: /tmp/appd-agt.csd.disa.mil.p12
+        passphrase: "changeit"
+        friendly_name: appd-agt.csd.disa.mil
+        state: present
+
+    - name: Copy p12 trusstore
+      ansible.builtin.copy:
+        src: /tmp/appd-agt.csd.disa.mil.p12
+        dest: /opt/appdynamics/machine-agent/conf/
+        owner: "root"
+        group: "root"
+        mode: "0644"
+
+    - name: Remove trusstore
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      with_items:
+        - path: "/tmp/appd-agt.csd.disa.mil.p12"
+        - path: "/tmp/appd-agt.csd.disa.mil.pem"
+
+    - name: Adjust system file before copy
+      ansible.builtin.lineinfile:
+        path: /opt/appdynamics/machine-agent/extensions/ServerMonitoring/conf/ServerMonitoring.yml
+        regexp: "{{ item.line }}"
+        line: "{{ item.value }}"
+        backup: yes
+      with_items:
+        - line: "maxNumberVolumes[[:space:]]*:[[:space:]]*[[:digit:]]"
+          value: "maxNumberVolumes: 20"
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable machine agent service
+      ansible.builtin.systemd:
+        name: appdynamics-machine-agent.service
+        enabled: true
+        state: started

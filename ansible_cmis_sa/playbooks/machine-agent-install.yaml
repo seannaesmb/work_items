@@ -5,6 +5,13 @@
     machine_agent_install_dir: /opt/appdynamics
     machine_agent_user: appdynamics-machine-agent
   tasks:
+    - name: Stop machine agent service
+      ansible.builtin.systemd:
+        name: appdynamics-machine-agent.service
+        enabled: true
+        state: stopped
+      ignore_errors: true
+
     - name: User account creation
       ansible.builtin.user:
         name: "{{ machine_agent_user }}"
@@ -47,6 +54,8 @@
         mode: "0644"
       loop: "{{ machine_agent_dirs.files }}"
       when: machine_agent_dirs.matched > 0
+      tags:
+        - remove-machine-agent
 
     - name: Unzip machine agent
       ansible.builtin.unarchive:
@@ -64,6 +73,50 @@
 
     - name: Add symlink jre
       ansible.builtin.file:
-        src: "/usr/lib/jvm/java-17-openjdk/"
+        src: "/usr/lib/jvm/jre-17-openjdk/"
         dest: "{{ machine_agent_install_dir }}/machine-agent/jre"
         state: link
+
+    - name: Create tmp directory in machine-agent dir
+      ansible.builtin.file:
+        path: "{{ machine_agent_install_dir }}/machine-agent/tmp"
+        state: directory
+        mode: "0755"
+        owner: "{{ machine_agent_user }}"
+        group: "{{ machine_agent_user }}"
+
+    - name: Adjust system file before copy
+      ansible.builtin.lineinfile:
+        path: "{{ machine_agent_install_dir }}/machine-agent/etc/systemd/system/appdynamics-machine-agent.service"
+        regexp: "{{ item.line }}"
+        line: "{{ item.value }}"
+        backup: yes
+      with_items:
+        - line: "^Environment=JAVA_HOME"
+          value: "Environment=JAVA_HOME=/opt/appdynamics/machine-agent/jre"
+        - line: "^Environment=MACHINE_AGENT_HOME"
+          value: "Environment=MACHINE_AGENT_HOME={{ machine_agent_install_dir }}/machine-agent"
+        - line: "^Environment=JAVA_OPTS"
+          value: 'Environment="JAVA_OPTS=-Djava.security.disableSystemPropertiesFile=true -Djava.io.tmpdir=/opt/appdynamics/machine-agent/tmp"'
+        - line: "^User"
+          value: "User={{ machine_agent_user }}"
+        - line: "^Environment=MACHINE_AGENT_USER"
+          value: "Environment=MACHINE_AGENT_USER={{ machine_agent_user }}"
+
+    - name: Copy service file
+      ansible.builtin.copy:
+        src: "{{ machine_agent_install_dir }}/machine-agent/etc/systemd/system/appdynamics-machine-agent.service"
+        dest: "/etc/systemd/system/appdynamics-machine-agent.service"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable machine agent service
+      ansible.builtin.systemd:
+        name: appdynamics-machine-agent.service
+        enabled: true
+        state: started
