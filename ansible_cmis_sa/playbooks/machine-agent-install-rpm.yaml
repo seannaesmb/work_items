@@ -1,6 +1,8 @@
 - name: Copy and install custom RPM
   hosts: all
   become: true
+  vars_files:
+    - vars.yaml
   tasks:
     - name: Copy RPM file to the remote server
       ansible.builtin.copy:
@@ -9,7 +11,7 @@
         mode: "0644"
 
     - name: Install the copied RPM package
-      ansible.builtin.command: dnf install -y /tmp/appdynamics-machine-agent-26.8.0.5560.x86_64.rpm
+      ansible.builtin.command: rpm -Uvh --nodigest --nosignature --nofiledigest /tmp/appdynamics-machine-agent-26.8.0.5560.x86_64.rpm
 
     - name: Create tmp directory in machine-agent dir
       ansible.builtin.file:
@@ -29,42 +31,50 @@
 
     - name: Get appd-agt cert
       community.crypto.get_certificate:
-        # host: appd-agt.csd.disa.mil
-        host: google.com
+        host: appd-agt.csd.disa.mil
         port: 443
         timeout: 10
       register: cert
+      tags:
+        - certificate
 
     - name: Output cert to file
       community.crypto.x509_certificate_convert:
         src_content: "{{ cert.cert }}"
         dest_path: /tmp/appd-agt.csd.disa.mil.pem
         format: pem
+        mode: "0644"
+      tags:
+        - certificate
 
     - name: Generated pkcs12 cert
-      community.crypto.openssl_pkcs12:
-        action: export
-        certificate_path: /tmp/appd-agt.csd.disa.mil.pem
-        path: /tmp/appd-agt.csd.disa.mil.p12
-        passphrase: "changeit"
-        friendly_name: appd-agt.csd.disa.mil
+      community.general.java_cert:
+        cert_path: /tmp/appd-agt.csd.disa.mil.pem
+        keystore_path: /tmp/appd-agt.csd.disa.mil.p12
+        keystore_pass: "{{ p12_passphrase }}"
+        cert_alias: appd-agt.csd.disa.mil
+        keystore_type: pkcs12
+        keystore_create: true
         state: present
+      tags:
+        - certificate
 
     - name: Copy p12 trusstore
       ansible.builtin.copy:
         src: /tmp/appd-agt.csd.disa.mil.p12
         dest: /opt/appdynamics/machine-agent/conf/
-        owner: "root"
-        group: "root"
+        owner: "appdynamics"
+        group: "appdynamics"
         mode: "0644"
+        remote_src: true
 
-    - name: Remove trusstore
-      ansible.builtin.file:
-        path: "{{ item.path }}"
-        state: absent
-      with_items:
-        - path: "/tmp/appd-agt.csd.disa.mil.p12"
-        - path: "/tmp/appd-agt.csd.disa.mil.pem"
+    # - name: Remove trusstore
+    #   ansible.builtin.file:
+    #     path: "{{ item.path }}"
+    #     state: absent
+    #   with_items:
+    #     - path: "/tmp/appd-agt.csd.disa.mil.p12"
+    #     - path: "/tmp/appd-agt.csd.disa.mil.pem"
 
     - name: Adjust system file before copy
       ansible.builtin.lineinfile:
@@ -75,6 +85,22 @@
       with_items:
         - line: "maxNumberVolumes[[:space:]]*:[[:space:]]*[[:digit:]]"
           value: "maxNumberVolumes: 20"
+
+    - name: Remove jre
+      ansible.builtin.file:
+        path: /opt/appdynamics/machine-agent/jre
+        state: absent
+
+    - name: Add symlink jre
+      ansible.builtin.file:
+        src: "/usr/lib/jvm/jre-17-openjdk/"
+        dest: /opt/appdynamics/machine-agent/jre
+        state: link
+
+    - name: Add tmp directory
+      ansible.builtin.file:
+        path: /opt/appdynamics/machine-agent/tmp
+        state: directory
 
     - name: Reload systemd daemon
       ansible.builtin.systemd:
